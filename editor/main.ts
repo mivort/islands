@@ -31,14 +31,24 @@ document.addEventListener('DOMContentLoaded', () => {
         content: 'Add node',
         coreAsWell: true,
         selector: '',
-        onClickFunction: () => {},
+        onClickFunction: (event) => {
+          cy.add({
+            data: { group: 'nodes' },
+            position: {
+              x: event.position.x,
+              y: event.position.y,
+            },
+          });
+        },
       },
       {
         id: 'remove',
         content: 'Remove',
         tooltipText: 'remove',
         selector: 'node, edge',
-        onClickFunction: () => {},
+        onClickFunction: (event) => {
+          event.target.remove();
+        },
         hasTrailingDivider: true,
       },
     ],
