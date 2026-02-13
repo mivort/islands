@@ -22,9 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
     layout: { name: 'preset' },
   });
 
-  cy.on('ctxtap', () => {});
+  cy.on('cxttap', () => {
+    const nodeSelected = cy.nodes(':selected').length > 0;
+    if (nodeSelected) {
+      menus.showMenuItem('link');
+    } else {
+      menus.hideMenuItem('link');
+    }
+  });
 
-  cy.contextMenus({
+  const menus = cy.contextMenus({
     menuItems: [
       {
         id: 'add-node',
@@ -42,6 +49,18 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        id: 'link',
+        content: 'Link',
+        selector: 'node',
+        onClickFunction: (event) => {
+          const target = event.target.id();
+          const nodes = cy.nodes(':selected');
+          for (const node of nodes) {
+            cy.add({ data: { group: 'edges', source: node.id(), target: target } });
+          }
+        },
+      },
+      {
         id: 'remove',
         content: 'Remove',
         tooltipText: 'remove',
@@ -49,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         onClickFunction: (event) => {
           event.target.remove();
         },
-        hasTrailingDivider: true,
       },
     ],
   });
