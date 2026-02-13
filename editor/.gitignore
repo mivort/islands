@@ -1,2 +1,2 @@
-main.js
-cytoscape.umd.js
+dist/
+node_modules/

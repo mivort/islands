@@ -1,4 +1,4 @@
-import cytoscape from "./cytoscape.umd.js";
+import cytoscape from "cytoscape";
 
 document.addEventListener('DOMContentLoaded', () => {
   cytoscape({
@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
       { data: { id: 'n5' }, position: { x: 100, y: 200 } },
 
       { group: 'edges', data: { id: 'n1n2', source: 'n1', target: 'n2' } },
+      { group: 'edges', data: { id: 'n1n5', source: 'n1', target: 'n5' } },
+      { group: 'edges', data: { id: 'n3n4', source: 'n3', target: 'n4' } },
     ],
     layout: { name: 'preset' },
   });
