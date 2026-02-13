@@ -1,7 +1,12 @@
-import cytoscape from "cytoscape";
+import cytoscape from 'cytoscape';
+import contextMenus from 'cytoscape-context-menus';
+
+cytoscape.use(contextMenus);
+
+import 'cytoscape-context-menus/cytoscape-context-menus.css';
 
 document.addEventListener('DOMContentLoaded', () => {
-  cytoscape({
+  const cy = cytoscape({
     container: document.getElementById('root'),
     elements: [
       { data: { id: 'n1' }, position: { x: 0, y: 0 } },
@@ -15,5 +20,27 @@ document.addEventListener('DOMContentLoaded', () => {
       { group: 'edges', data: { id: 'n3n4', source: 'n3', target: 'n4' } },
     ],
     layout: { name: 'preset' },
+  });
+
+  cy.on('ctxtap', () => {});
+
+  cy.contextMenus({
+    menuItems: [
+      {
+        id: 'add-node',
+        content: 'Add node',
+        coreAsWell: true,
+        selector: '',
+        onClickFunction: () => {},
+      },
+      {
+        id: 'remove',
+        content: 'Remove',
+        tooltipText: 'remove',
+        selector: 'node, edge',
+        onClickFunction: () => {},
+        hasTrailingDivider: true,
+      },
+    ],
   });
 });
