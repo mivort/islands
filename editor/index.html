@@ -12,12 +12,24 @@
       margin: 0;
     }
 
-    #root {
+    div#layout {
+      display: flex;
+    }
+
+    main {
+      flex: 1;
       background-color: #888;
       height: 100vh;
     }
+
+    aside {
+      width: 264px;
+    }
   </style>
   <body>
-    <div id="root"></div>
+    <div id="layout">
+      <main id="root"></main>
+      <aside></aside>
+    </div>
   </body>
 </html>
