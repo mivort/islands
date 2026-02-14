@@ -6,10 +6,11 @@ cytoscape.use(contextMenus);
 import 'cytoscape-context-menus/cytoscape-context-menus.css';
 
 document.addEventListener('DOMContentLoaded', () => {
+  const style = cytoscape.stylesheet();
   const cy = cytoscape({
     container: document.getElementById('root'),
     elements: [
-      { data: { id: 'n1' }, position: { x: 0, y: 0 } },
+      { data: { id: 'n1', name: 'test' }, position: { x: 0, y: 0 } },
       { data: { id: 'n2' }, position: { x: 100, y: 100 } },
       { data: { id: 'n3', parent: 'n5' }, position: { x: 0, y: 100 } },
       { data: { id: 'n4', parent: 'n5' }, position: { x: 0, y: 200 } },
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { group: 'edges', data: { id: 'n3n4', source: 'n3', target: 'n4' } },
     ],
     layout: { name: 'preset' },
+    style: style.selector('node').css({ 'content': 'data(name)' }),
   });
 
   cy.on('cxttap', () => {
