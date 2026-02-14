@@ -26,10 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
       menus.showMenuItem('link');
       menus.showMenuItem('parent');
       menus.showMenuItem('add-node-linked');
+      menus.showMenuItem('unparent');
     } else {
       menus.hideMenuItem('link');
       menus.hideMenuItem('parent');
       menus.hideMenuItem('add-node-linked');
+      menus.hideMenuItem('unparent');
     }
   });
 
@@ -76,6 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
           });
           for (const node of nodes) {
             linkWithSelected(node.id());
+          }
+        },
+      },
+      {
+        id: 'unparent',
+        content: 'Unparent',
+        coreAsWell: true,
+        selector: '',
+        onClickFunction: () => {
+          const nodes = cy.nodes(':selected');
+          for (const node of nodes) {
+            node.move({ parent: null });
           }
         },
       },
