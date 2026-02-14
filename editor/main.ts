@@ -6,7 +6,7 @@ cytoscape.use(contextMenus);
 import 'cytoscape-context-menus/cytoscape-context-menus.css';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const style = cytoscape.stylesheet();
+  const style = (cytoscape as any).stylesheet();
   const cy = cytoscape({
     container: document.getElementById('root'),
     elements: [
