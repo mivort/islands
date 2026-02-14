@@ -145,4 +145,27 @@ document.addEventListener('DOMContentLoaded', () => {
     window.open(url);
     URL.revokeObjectURL(url);
   });
+
+  const filePicker = document.getElementById('side-file-picker');
+  filePicker?.addEventListener('change', () => {
+    const files = (filePicker as any).files;
+    if (files.length === 0) {
+      return
+    }
+    cy.elements().remove();
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.readAsText(file, 'UTF-8');
+      reader.onload = ({ target }) => {
+        if (!target?.result) return;
+        try {
+          const json = JSON.parse(target.result as string);
+          cy.json({
+            elements: json
+          });
+        }
+        catch {}
+      };
+    }
+  });
 });
