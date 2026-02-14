@@ -100,4 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
       },
     ],
   });
+
+  document.getElementById('side-fit-button')?.addEventListener('click', () => {
+    cy.fit();
+  });
 });
