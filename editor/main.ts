@@ -92,6 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
             event.target.remove();
             return;
           }
+          const edges = cy.edges(':selected');
+          for (const edge of edges) {
+            edge.remove();
+          }
           const nodes = cy.nodes(':selected');
           for (const node of nodes) {
             node.remove();
