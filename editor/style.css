@@ -5,16 +5,31 @@ body {
   margin: 0;
 }
 
-div#layout {
-  display: flex;
-}
-
 main {
-  flex: 1;
   height: 100vh;
 }
 
 aside {
   width: 264px;
   background-color: #333;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.flex {
+  display: flex;
+}
+
+.expand {
+  flex: 1;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.column {
+  flex-direction: column;
 }
