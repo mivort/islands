@@ -75,12 +75,27 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        id: 'select',
+        content: 'Select',
+        selector: 'node, edge',
+        onClickFunction: (event) => {
+          event.target.select();
+        },
+      },
+      {
         id: 'remove',
         content: 'Remove',
         tooltipText: 'remove',
         selector: 'node, edge',
         onClickFunction: (event) => {
-          event.target.remove();
+          if (!event.target.selected()) {
+            event.target.remove();
+            return;
+          }
+          const nodes = cy.nodes(':selected');
+          for (const node of nodes) {
+            node.remove();
+          }
         },
       },
     ],
