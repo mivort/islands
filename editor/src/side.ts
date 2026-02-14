@@ -72,6 +72,9 @@ export class SidePanel {
     document.getElementById('side-fit-button')?.addEventListener('click', () => {
       cy.fit();
     });
+    document.getElementById('side-fit-sel-button')?.addEventListener('click', () => {
+      cy.fit(cy.nodes(':selected'));
+    });
 
     document.getElementById('side-export-button')?.addEventListener('click', () => {
       const json = JSON.stringify(cy.json().elements, null, 2);
