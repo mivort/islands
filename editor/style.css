@@ -33,3 +33,16 @@ textarea {
 .column {
   flex-direction: column;
 }
+
+.gap {
+  gap: 4px;
+}
+
+.ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.nowrap {
+  white-space: nowrap;
+}

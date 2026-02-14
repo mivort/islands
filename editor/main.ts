@@ -1,5 +1,6 @@
 import cytoscape from 'cytoscape';
 import contextMenus from 'cytoscape-context-menus';
+import { SidePanel } from './side';
 
 cytoscape.use(contextMenus);
 
@@ -24,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     style: style.selector('node[name]').css({ 'content': 'data(name)' }),
   });
 
+  const side = new SidePanel(cy);
+
   cy.on('cxttap', () => {
     const nodeSelected = cy.nodes(':selected').length > 0;
     if (nodeSelected) {
@@ -36,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
       menus.hideMenuItem('add-node-linked');
     }
   });
+
+  cy.on('select', () => side.showSelected());
+  cy.on('unselect', () => side.showSelected());
 
   /** Create edges starting at selected nodes. */
   const linkWithSelected = (target: string) => {
@@ -130,42 +136,5 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
     ],
-  });
-
-  document.getElementById('side-fit-button')?.addEventListener('click', () => {
-    cy.fit();
-  });
-
-  document.getElementById('side-export-button')?.addEventListener('click', () => {
-    const json = JSON.stringify(cy.json().elements, null, 2);
-    const data = json[Symbol.iterator]();
-    const file = new File(data as any, "islands.json", { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(file);
-
-    window.open(url);
-    URL.revokeObjectURL(url);
-  });
-
-  const filePicker = document.getElementById('side-file-picker');
-  filePicker?.addEventListener('change', () => {
-    const files = (filePicker as any).files;
-    if (files.length === 0) {
-      return
-    }
-    cy.elements().remove();
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.readAsText(file, 'UTF-8');
-      reader.onload = ({ target }) => {
-        if (!target?.result) return;
-        try {
-          const json = JSON.parse(target.result as string);
-          cy.json({
-            elements: json
-          });
-        }
-        catch {}
-      };
-    }
   });
 });
