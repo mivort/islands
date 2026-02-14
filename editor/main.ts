@@ -26,8 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodeSelected = cy.nodes(':selected').length > 0;
     if (nodeSelected) {
       menus.showMenuItem('link');
+      menus.showMenuItem('parent');
     } else {
       menus.hideMenuItem('link');
+      menus.hideMenuItem('parent');
     }
   });
 
@@ -57,6 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
           const nodes = cy.nodes(':selected');
           for (const node of nodes) {
             cy.add({ data: { group: 'edges', source: node.id(), target: target } });
+          }
+        },
+      },
+      {
+        id: 'parent',
+        content: 'Parent',
+        selector: 'node',
+        onClickFunction: (event) => {
+          const parent = event.target.id();
+          const nodes = cy.nodes(':selected');
+          for (const node of nodes) {
+            node.move({ parent });
           }
         },
       },
