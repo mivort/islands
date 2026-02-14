@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { group: 'edges', data: { id: 'n3n4', source: 'n3', target: 'n4' } },
     ],
     layout: { name: 'preset' },
-    style: style.selector('node').css({ 'content': 'data(name)' }),
+    style: style.selector('node[name]').css({ 'content': 'data(name)' }),
   });
 
   cy.on('cxttap', () => {
@@ -29,11 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nodeSelected) {
       menus.showMenuItem('link');
       menus.showMenuItem('parent');
+      menus.showMenuItem('add-node-linked');
     } else {
       menus.hideMenuItem('link');
       menus.hideMenuItem('parent');
+      menus.hideMenuItem('add-node-linked');
     }
   });
+
+  /** Create edges starting at selected nodes. */
+  const linkWithSelected = (target: string) => {
+    const nodes = cy.nodes(':selected');
+    for (const node of nodes) {
+      cy.add({ data: { group: 'edges', source: node.id(), target } });
+    }
+  };
 
   const menus = cy.contextMenus({
     menuItems: [
@@ -53,15 +63,30 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        id: 'add-node-linked',
+        content: 'Add linked node',
+        coreAsWell: true,
+        selector: '',
+        onClickFunction: (event) => {
+          const nodes = cy.add({
+            data: { group: 'nodes' },
+            position: {
+              x: event.position.x,
+              y: event.position.y,
+            },
+          });
+          for (const node of nodes) {
+            linkWithSelected(node.id());
+          }
+        },
+      },
+      {
         id: 'link',
         content: 'Link',
         selector: 'node',
         onClickFunction: (event) => {
           const target = event.target.id();
-          const nodes = cy.nodes(':selected');
-          for (const node of nodes) {
-            cy.add({ data: { group: 'edges', source: node.id(), target: target } });
-          }
+          linkWithSelected(target);
         },
       },
       {
