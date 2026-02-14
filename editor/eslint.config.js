@@ -1,15 +1,16 @@
 import stylistic from '@stylistic/eslint-plugin';
-import globals from "globals";
 import js from '@eslint/js';
+import css from '@eslint/css';
+import globals from "globals";
 
 export default [
-  js.configs.recommended,
   {
     files: ["**/*.ts", "**/*.js"],
     plugins: {
       '@stylistic': stylistic,
     },
     rules: {
+      ...js.configs.recommended.rules,
       '@stylistic/indent': ['error', 2],
       '@stylistic/semi': ['error', 'always'],
     },
@@ -18,5 +19,11 @@ export default [
         ...globals.browser,
       },
     },
-  }
+  },
+  {
+    files: ["**/*.css"],
+    language: "css/css",
+    plugins: { css },
+    rules: { ...css.configs.recommended.rules },
+  },
 ];

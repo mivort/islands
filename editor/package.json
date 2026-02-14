@@ -5,6 +5,7 @@
     "cytoscape-context-menus": "^4.2.1"
   },
   "devDependencies": {
+    "@eslint/css": "^0.14.1",
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.8.0",
     "@types/cytoscape-context-menus": "^4.1.5",
