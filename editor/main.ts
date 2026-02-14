@@ -135,4 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('side-fit-button')?.addEventListener('click', () => {
     cy.fit();
   });
+
+  document.getElementById('side-export-button')?.addEventListener('click', () => {
+    const json = JSON.stringify(cy.json().elements, null, 2);
+    const data = json[Symbol.iterator]();
+    const file = new File(data as any, "islands.json", { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(file);
+
+    window.open(url);
+    URL.revokeObjectURL(url);
+  });
 });
