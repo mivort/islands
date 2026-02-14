@@ -12,7 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     container: document.getElementById('root'),
     elements: [],
     layout: { name: 'preset' },
-    style: style.selector('node[name]').css({ 'content': 'data(name)' }),
+    style: style.selector('node[name]').css({
+      'label': 'data(name)',
+      'font-family': 'monospace',
+    }),
   });
 
   const side = new SidePanel(cy);

@@ -1,8 +1,11 @@
 body {
   color: #eee;
-  font-family: sans-serif;
   background-color: #888;
   margin: 0;
+}
+
+body, input, button, textarea {
+  font-family: monospace;
 }
 
 main {
