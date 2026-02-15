@@ -65,8 +65,15 @@ export class SidePanel {
     });
     this.ref?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
+      const value = (event.target as any).value;
+      if (value) {
+        for (const node of nodes) {
+          node.data('ref', value);
+        }
+        return;
+      }
       for (const node of nodes) {
-        node.data('ref', (event.target as any).value);
+        node.removeData('ref');
       }
     });
     this.desc?.addEventListener('change', (event) => {
