@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isParent = nodes.some((node) => (node as any).isParent());
     const isChild = nodes.some((node) => (node as any).isChild());
 
-    setMenuItemsVisible(['link', 'parent', 'add-node-linked'], nodeSelected);
+    setMenuItemsVisible(['link-to', 'link-from', 'parent', 'add-node-linked'], nodeSelected);
     setMenuItemsVisible(['add-node-child'], nodeSelected && isParent);
     setMenuItemsVisible(['unparent'], nodeSelected && isChild);
   });
@@ -133,8 +133,14 @@ document.addEventListener('DOMContentLoaded', () => {
   cy.on('unselect', () => side.showSelected());
 
   /** Create edges starting at selected nodes. */
-  const linkWithSelected = (target: string) => {
+  const linkWithSelected = (target: string, reverse?: boolean) => {
     const nodes = cy.nodes(':selected');
+    if (reverse) {
+      for (const node of nodes) {
+        cy.add({ data: { group: 'edges', target: node.id(), source: target } });
+      }
+      return;
+    }
     for (const node of nodes) {
       cy.add({ data: { group: 'edges', source: node.id(), target } });
     }
@@ -205,12 +211,21 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        id: 'link',
-        content: 'Link',
+        id: 'link-to',
+        content: 'Link to',
         selector: 'node',
         onClickFunction: (event) => {
           const target = event.target.id();
           linkWithSelected(target);
+        },
+      },
+      {
+        id: 'link-from',
+        content: 'Link from',
+        selector: 'node',
+        onClickFunction: (event) => {
+          const target = event.target.id();
+          linkWithSelected(target, true);
         },
       },
       {
