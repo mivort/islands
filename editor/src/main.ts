@@ -207,16 +207,25 @@ document.addEventListener('DOMContentLoaded', () => {
             event.target.remove();
             return;
           }
-          const edges = cy.edges(':selected');
-          for (const edge of edges) {
-            edge.remove();
-          }
-          const nodes = cy.nodes(':selected');
-          for (const node of nodes) {
-            node.remove();
+          for (const elem of cy.elements(':selected')) {
+            elem.remove();
           }
         },
       },
     ],
+  });
+
+  document.body.addEventListener('keyup', (event) => {
+    if (event.target !== document.body) {
+      return;
+    }
+    switch (event.key) {
+      case 'Delete':
+        for (const elem of cy.elements(':selected')) {
+          elem.remove();
+        }
+        break;
+      default:
+    }
   });
 });
