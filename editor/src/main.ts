@@ -7,15 +7,50 @@ cytoscape.use(contextMenus);
 import 'cytoscape-context-menus/cytoscape-context-menus.css';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const style = (cytoscape as any).stylesheet();
   const cy = cytoscape({
     container: document.getElementById('root'),
     elements: [],
     layout: { name: 'preset' },
-    style: style.selector('node[name]').css({
-      'label': 'data(name)',
-      'font-family': 'monospace',
-    }),
+    style: [
+      {
+        selector: 'node',
+        css: {
+          'border-color': '#333',
+          'border-width': '2',
+        },
+      },
+      {
+        selector: 'node[name]',
+        css: {
+          'label': 'data(name)',
+          'font-family': 'monospace',
+        },
+      },
+      {
+        selector: ':parent',
+        css: {
+          'shape': 'round-rectangle',
+          'corner-radius': '10',
+          'border-color': '#333',
+          'background-color': '#fff',
+          'background-opacity': 0.1,
+        },
+      },
+      {
+        selector: ':parent:selected',
+        css: {
+          'background-color': '#0169d9',
+          'background-opacity': 1,
+        },
+      },
+      {
+        selector: 'edge',
+        css: {
+          'line-outline-width': '2',
+          'line-outline-color': '#333',
+        },
+      },
+    ],
   });
 
   const side = new SidePanel(cy);
