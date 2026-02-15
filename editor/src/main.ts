@@ -1,8 +1,10 @@
 import cytoscape from 'cytoscape';
+import undoRedo from 'cytoscape-undo-redo';
 import contextMenus from 'cytoscape-context-menus';
 import { SidePanel } from './side';
 
 cytoscape.use(contextMenus);
+cytoscape.use(undoRedo);
 
 import 'cytoscape-context-menus/cytoscape-context-menus.css';
 
