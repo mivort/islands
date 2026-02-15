@@ -64,21 +64,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const side = new SidePanel(cy);
 
-  cy.on('cxttap', () => {
-    const nodeSelected = cy.nodes(':selected').length > 0;
-    if (nodeSelected) {
-      menus.showMenuItem('link');
-      menus.showMenuItem('parent');
-      menus.showMenuItem('add-node-linked');
-      menus.showMenuItem('add-node-child');
-      menus.showMenuItem('unparent');
+  /** Update multiple menu items visibility. */
+  const setMenuItemsVisible = (items: string[], state: boolean) => {
+    if (state) {
+      for (const item of items) {
+        menus.showMenuItem(item);
+      }
     } else {
-      menus.hideMenuItem('link');
-      menus.hideMenuItem('parent');
-      menus.hideMenuItem('add-node-linked');
-      menus.hideMenuItem('add-node-child');
-      menus.hideMenuItem('unparent');
+      for (const item of items) {
+        menus.hideMenuItem(item);
+      }
     }
+  };
+
+  cy.on('cxttap', () => {
+    const nodes = cy.nodes(':selected');
+    const nodeSelected = nodes.length > 0;
+    const isParent = nodes.some((node) => (node as any).isParent());
+    const isChild = nodes.some((node) => (node as any).isChild());
+
+    setMenuItemsVisible(['link', 'parent', 'add-node-linked'], nodeSelected);
+    setMenuItemsVisible(['add-node-child'], nodeSelected && isParent);
+    setMenuItemsVisible(['unparent'], nodeSelected && isChild);
   });
 
   cy.on('select', () => side.showSelected());
