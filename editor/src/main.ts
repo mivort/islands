@@ -163,6 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        id: 'reverse',
+        content: 'Reverse',
+        selector: 'edge',
+        onClickFunction: (event) => {
+          const target = event.target.source().id();
+          const source = event.target.target().id();
+          const data = event.target.data();
+          event.target.remove();
+          cy.add({ data: { ...data, group: 'edges', source, target } });
+        },
+      },
+      {
         id: 'remove',
         content: 'Remove',
         tooltipText: 'remove',
