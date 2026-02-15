@@ -117,10 +117,10 @@ export class SidePanel {
       URL.revokeObjectURL(url);
     });
 
-    const filePicker = document.getElementById('side-file-picker');
+    const filePicker = document.getElementById('side-file-picker') as HTMLInputElement;
     filePicker?.addEventListener('change', () => {
-      const files = (filePicker as any).files;
-      if (files.length === 0) {
+      const files = filePicker.files;
+      if (!files || files?.length === 0) {
         return;
       }
       cy.elements().remove();
@@ -140,6 +140,7 @@ export class SidePanel {
           }
         };
       }
+      filePicker.value = '';
     });
   }
 }
