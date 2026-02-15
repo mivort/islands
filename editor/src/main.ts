@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'font-family': 'monospace',
           'text-wrap': 'wrap',
           'text-margin-y': -2,
+          'text-outline-width': 2,
+          'text-outline-color': '#aaa',
         },
       },
       {
@@ -35,8 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'shape': 'round-rectangle',
           'corner-radius': '10',
           'border-color': '#333',
-          'background-color': '#fff',
-          'background-opacity': 0.1,
+          'background-color': '#999',
+          'background-opacity': 0.3,
         },
       },
       {
