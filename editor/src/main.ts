@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         css: {
           'border-color': '#333',
           'border-width': '2',
+          'background-color': '#aaa',
         },
       },
       {
@@ -39,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: ':parent:selected',
+        selector: 'node:parent:selected, node:selected',
         css: {
           'background-color': '#0169d9',
           'background-opacity': 1,
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       {
         selector: 'edge',
         css: {
+          'line-color': '#999',
           'curve-style': 'straight',
           'target-arrow-shape': 'tee',
           'target-arrow-color': '#333',
@@ -57,6 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
           'source-distance-from-node': 4,
           'target-distance-from-node': 4,
           'arrow-scale': 0.6,
+        },
+      },
+      {
+        selector: 'edge:selected',
+        css: {
+          'line-color': '#0169d9',
         },
       },
     ],
