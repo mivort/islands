@@ -264,9 +264,20 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        id: 'lock',
+        content: 'Lock',
+        selector: 'node',
+        onClickFunction: (event) => {
+          if (event.target.locked()) {
+            event.target.unlock();
+            return;
+          }
+          event.target.lock();
+        },
+      },
+      {
         id: 'remove',
         content: 'Remove',
-        tooltipText: 'remove',
         selector: 'node, edge',
         onClickFunction: (event) => {
           if (!event.target.selected()) {
