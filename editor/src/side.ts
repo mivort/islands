@@ -8,12 +8,15 @@ export class SidePanel {
   ref: HTMLInputElement | null;
   desc: HTMLTextAreaElement | null;
 
+  classFade: HTMLInputElement | null;
+  classDraft: HTMLInputElement | null;
+
   /** Update the display of selected nodes. */
   showSelected() {
     const nodes = this.cy.elements(':selected');
     if (nodes.length === 0) {
       this.showId('');
-      this.hideNode();
+      this.hideElement();
     } else if (nodes.length === 1) {
       this.showId(nodes[0].id());
       this.showElement(nodes[0]);
@@ -34,13 +37,17 @@ export class SidePanel {
     if (this.name) this.name.value = node.data('name') ?? '';
     if (this.ref) this.ref.value = node.data('ref') ?? '';
     if (this.desc) this.desc.value = node.data('desc') ?? '';
+    if (this.classFade) this.classFade.checked = node.hasClass('fade');
+    if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
   }
 
   /** Hide display of node data. */
-  hideNode() {
+  hideElement() {
     if (this.name) this.name.value = '';
     if (this.ref) this.ref.value = '';
     if (this.desc) this.desc.value = '';
+    if (this.classFade) this.classFade.checked = false;
+    if (this.classDraft) this.classDraft.checked = false;
   }
 
   constructor(cy: cytoscape.Core) {
@@ -73,7 +80,31 @@ export class SidePanel {
       cy.fit();
     });
     document.getElementById('side-fit-sel-button')?.addEventListener('click', () => {
-      cy.fit(cy.nodes(':selected'));
+      cy.fit(cy.elements(':selected'));
+    });
+
+    /** Toggle class depending on checkbox value. */
+    const toggleClass = (name: string, checked: boolean) => {
+      const elements = this.cy.elements(':selected');
+      if (checked) {
+        for (const elem of elements) {
+          elem.addClass(name);
+        }
+        return;
+      }
+      for (const elem of elements) {
+        elem.removeClass(name);
+      }
+    };
+
+    this.classFade = document.getElementById('side-edit-class-fade') as HTMLInputElement | null;
+    this.classFade?.addEventListener('change', ({ target }) => {
+      toggleClass('fade', (target as HTMLInputElement).checked);
+    });
+
+    this.classDraft = document.getElementById('side-edit-class-draft') as HTMLInputElement;
+    this.classDraft?.addEventListener('change', ({ target }) => {
+      toggleClass('draft', (target as HTMLInputElement).checked);
     });
 
     document.getElementById('side-export-button')?.addEventListener('click', () => {

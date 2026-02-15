@@ -64,6 +64,37 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        selector: 'node.fade',
+        css: {
+          'background-opacity': 0.5,
+          'border-opacity': 0.5,
+        },
+      },
+      {
+        selector: 'node.draft',
+        css: {
+          'border-style': 'dashed',
+          'border-width': 3,
+          'border-dash-pattern': [6, 3],
+        },
+      },
+      {
+        selector: 'edge.fade',
+        css: {
+          'line-opacity': 0.5,
+        },
+      },
+      {
+        selector: 'edge.draft',
+        css: {
+          'line-color': '#333',
+          'line-style': 'dashed',
+          'line-cap': 'butt',
+          'line-outline-width': 0,
+          'arrow-scale': 1,
+        },
+      },
+      {
         selector: 'edge:selected',
         css: {
           'line-color': '#0169d9',
@@ -209,9 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
         onClickFunction: (event) => {
           const target = event.target.source().id();
           const source = event.target.target().id();
+          const classes = event.target.classes();
           const data = event.target.data();
           event.target.remove();
-          cy.add({ data: { ...data, group: 'edges', source, target } });
+          cy.add({ data: { ...data, group: 'edges', source, target }, classes });
         },
       },
       {
