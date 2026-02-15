@@ -10,16 +10,16 @@ export class SidePanel {
 
   /** Update the display of selected nodes. */
   showSelected() {
-    const nodes = this.cy.nodes(':selected');
+    const nodes = this.cy.elements(':selected');
     if (nodes.length === 0) {
       this.showId('');
       this.hideNode();
     } else if (nodes.length === 1) {
       this.showId(nodes[0].id());
-      this.showNode(nodes[0]);
+      this.showElement(nodes[0]);
     } else {
       this.showId(`<${nodes.length} selected>`);
-      this.showNode(nodes[0]);
+      this.showElement(nodes[0]);
     }
   }
 
@@ -30,7 +30,7 @@ export class SidePanel {
   }
 
   /** Show specified node's attached data. */
-  showNode(node: cytoscape.NodeSingular) {
+  showElement(node: cytoscape.NodeSingular) {
     if (this.name) this.name.value = node.data('name') ?? '';
     if (this.ref) this.ref.value = node.data('ref') ?? '';
     if (this.desc) this.desc.value = node.data('desc') ?? '';
@@ -51,19 +51,19 @@ export class SidePanel {
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
     this.name?.addEventListener('change', (event) => {
-      const nodes = this.cy.nodes(':selected');
+      const nodes = this.cy.elements(':selected');
       for (const node of nodes) {
         node.data('name', (event.target as any).value);
       }
     });
     this.ref?.addEventListener('change', (event) => {
-      const nodes = this.cy.nodes(':selected');
+      const nodes = this.cy.elements(':selected');
       for (const node of nodes) {
         node.data('ref', (event.target as any).value);
       }
     });
     this.desc?.addEventListener('change', (event) => {
-      const nodes = this.cy.nodes(':selected');
+      const nodes = this.cy.elements(':selected');
       for (const node of nodes) {
         node.data('desc', (event.target as any).value);
       }
