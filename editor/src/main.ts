@@ -66,11 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
       menus.showMenuItem('link');
       menus.showMenuItem('parent');
       menus.showMenuItem('add-node-linked');
+      menus.showMenuItem('add-node-child');
       menus.showMenuItem('unparent');
     } else {
       menus.hideMenuItem('link');
       menus.hideMenuItem('parent');
       menus.hideMenuItem('add-node-linked');
+      menus.hideMenuItem('add-node-child');
       menus.hideMenuItem('unparent');
     }
   });
@@ -119,6 +121,23 @@ document.addEventListener('DOMContentLoaded', () => {
           for (const node of nodes) {
             linkWithSelected(node.id());
           }
+        },
+      },
+      {
+        id: 'add-node-child',
+        content: 'Add child node',
+        coreAsWell: true,
+        selector: '',
+        onClickFunction: (event) => {
+          const selected = cy.nodes(':selected')[0];
+          if (!selected) return;
+          cy.add({
+            data: { group: 'nodes', parent: selected.id() },
+            position: {
+              x: event.position.x,
+              y: event.position.y,
+            },
+          });
         },
       },
       {
