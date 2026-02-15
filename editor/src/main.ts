@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
       {
         selector: 'edge',
         css: {
+          'curve-style': 'straight',
+          'target-arrow-shape': 'tee',
+          'target-arrow-color': '#333',
+          'arrow-scale': 1,
+          'source-endpoint': 'inside-to-node',
           'line-outline-width': '2',
           'line-outline-color': '#333',
         },
