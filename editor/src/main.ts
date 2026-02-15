@@ -269,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     switch (event.key) {
+      case 'Backspace':
       case 'Delete':
         for (const elem of cy.elements(':selected')) {
           elem.remove();
