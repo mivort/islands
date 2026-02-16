@@ -11,6 +11,9 @@ export class SidePanel {
   classFade: HTMLInputElement | null;
   classDraft: HTMLInputElement | null;
 
+  /** Current file name for saving. */
+  filename: string = 'islands.json';
+
   /** Update the display of selected nodes. */
   showSelected() {
     const nodes = this.cy.elements(':selected');
@@ -24,6 +27,11 @@ export class SidePanel {
       this.showId(`<${nodes.length} selected>`);
       this.showElement(nodes[0]);
     }
+  }
+
+  /** Show the title of the currently open file. */
+  showTitle() {
+    document.title = `Islands - ${this.filename}`;
   }
 
   /** Show selected node ID. */
@@ -117,10 +125,17 @@ export class SidePanel {
     document.getElementById('side-export-button')?.addEventListener('click', () => {
       const json = JSON.stringify(cy.json().elements, null, 2);
       const data = json[Symbol.iterator]();
-      const file = new File(data as any, "islands.json", { type: 'application/octet-stream' });
+      const file = new File(data as any, this.filename, { type: 'application/octet-stream' });
       const url = URL.createObjectURL(file);
 
-      window.open(url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = this.filename;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
       URL.revokeObjectURL(url);
     });
 
@@ -132,6 +147,7 @@ export class SidePanel {
       }
       cy.elements().remove();
       for (const file of files) {
+        this.filename = file.name;
         const reader = new FileReader();
         reader.readAsText(file, 'UTF-8');
         reader.onload = ({ target }) => {
@@ -148,6 +164,7 @@ export class SidePanel {
         };
       }
       filePicker.value = '';
+      this.showTitle();
     });
   }
 }
