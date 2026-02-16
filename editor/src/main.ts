@@ -115,6 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ],
   });
 
+  const undo = (cy as any).undoRedo({
+    stackSizeLimit: 1000,
+  });
   const side = new SidePanel(cy);
 
   /** Update multiple menu items visibility. */
@@ -166,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coreAsWell: true,
         selector: '',
         onClickFunction: (event) => {
-          cy.add({
+          undo.do('add', {
             data: { group: 'nodes' },
             position: {
               x: event.position.x,
@@ -291,12 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         selector: 'node, edge',
         onClickFunction: (event) => {
           if (!event.target.selected()) {
-            event.target.remove();
+            undo.do('remove', event.target);
             return;
           }
-          for (const elem of cy.elements(':selected')) {
-            elem.remove();
-          }
+          undo.do('remove', cy.elements(':selected'));
         },
       },
     ],
@@ -309,9 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switch (event.key) {
       case 'Backspace':
       case 'Delete':
-        for (const elem of cy.elements(':selected')) {
-          elem.remove();
-        }
+        undo.do('remove', cy.elements(':selected'));
         break;
       default:
     }

@@ -91,6 +91,13 @@ export class SidePanel {
       }
     });
 
+    document.getElementById('side-undo-button')?.addEventListener('click', () => {
+      (this.cy as any).undoRedo({}, true).undo();
+    });
+    document.getElementById('side-redo-button')?.addEventListener('click', () => {
+      (this.cy as any).undoRedo({}, true).redo();
+    });
+
     document.getElementById('side-fit-button')?.addEventListener('click', () => {
       cy.fit();
     });
