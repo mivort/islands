@@ -1,14 +1,7 @@
-use std::process::{Command, Stdio};
-
-use lsp_types::InitializeParams;
+mod client;
 
 fn main() -> anyhow::Result<()> {
-    let mut _child = Command::new("rust-analyzer")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-
-    let _init_params = InitializeParams::default();
+    let _client = client::LspClient::new("rust-analyzer")?;
 
     Ok(())
 }
