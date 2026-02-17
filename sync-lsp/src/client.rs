@@ -1,13 +1,12 @@
-use std::io::{self, BufReader, Write as _};
+use std::io::{self, BufRead as _, BufReader, Read as _, Write as _};
 use std::process::{ChildStdin, ChildStdout, Command, Stdio};
 
 use anyhow::Context as _;
 use lsp_types::{notification::Notification, request::Request};
-use serde_json::json;
+use serde_json::{Value, json};
 
 /// LSP client instance with in-out references.
 pub(crate) struct LspClient {
-    #[expect(dead_code)]
     reader: BufReader<ChildStdout>,
     writer: ChildStdin,
 
@@ -42,20 +41,27 @@ impl LspClient {
 
     /// Call provided method with parameters and wait for the reply. Increase
     /// message ID count.
-    #[expect(dead_code)]
-    pub(crate) fn request<R: Request>(&mut self, _method: &str) -> anyhow::Result<()> {
+    pub(crate) fn request<R: Request>(&mut self, params: R::Params) -> anyhow::Result<R::Result> {
         let body = serde_json::to_string(&json!({
             "jsonrpc": "2.0",
             "id": self.message_id,
             "method": R::METHOD,
-            "params": "",
+            "params": serde_json::to_value(&params)?,
         }))?;
         self.write_content(&body)?;
-
-        // TODO: wait for reply.
-
         self.message_id += 1;
-        Ok(())
+
+        loop {
+            let mut content = self.read_content()?;
+            if content.get("id").and_then(Value::as_i64) != Some(self.message_id) {
+                continue;
+            }
+            let result = content
+                .get_mut("result")
+                .context("Missing result value")?
+                .take();
+            return Ok(serde_json::from_value(result).context("Result parsing failed")?);
+        }
     }
 
     /// Send a notification to LSP server.
@@ -81,5 +87,34 @@ impl LspClient {
             content
         )?;
         self.writer.flush()
+    }
+
+    /// Read response and parse as JSON.
+    fn read_content(&mut self) -> anyhow::Result<serde_json::Value> {
+        let mut content_length: Option<u64> = None;
+        let mut line = String::new();
+
+        loop {
+            line.clear();
+            self.reader.read_line(&mut line)?;
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                break;
+            }
+            if let Some(val) = trimmed.strip_prefix("Content-Length: ") {
+                content_length = Some(val.parse()?);
+            }
+        }
+
+        let content_length = content_length.context("Missing Content-Length header")?;
+
+        line.clear();
+
+        // TODO: look for a way to avoid resize
+        let mut buf = line.into_bytes();
+        buf.resize(content_length as usize, 0);
+        self.reader.read_exact(&mut buf)?;
+
+        Ok(serde_json::from_slice(&buf).context("Response content parsing failed")?)
     }
 }
