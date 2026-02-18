@@ -38,9 +38,10 @@ impl LspClient {
         let workdir: Url = format!("file://{}", cwd.display()).parse()?;
 
         let (indexed_send, indexed_recv) = oneshot::channel();
-        let router = Router::from_language_client(LspState {
+        let mut router = Router::from_language_client(LspState {
             indexed_send: Some(indexed_send),
         });
+        router.event(LspState::stop);
 
         let mut child = async_process::Command::new(cmd)
             .current_dir(&cwd)
@@ -180,6 +181,7 @@ impl LspClient {
     /// Wait for LSP server child process completion.
     pub async fn exit(&mut self) -> anyhow::Result<()> {
         self.server.shutdown(()).await?;
+        self.server.emit(LspStop)?;
         self.server.exit(())?;
 
         let join = self
@@ -191,8 +193,16 @@ impl LspClient {
     }
 }
 
+struct LspStop;
+
 struct LspState {
     indexed_send: Option<oneshot::Sender<()>>,
+}
+
+impl LspState {
+    fn stop(&mut self, _: LspStop) -> ControlFlow<async_lsp::Result<()>> {
+        ControlFlow::Break(Ok(()))
+    }
 }
 
 impl LanguageClient for LspState {
