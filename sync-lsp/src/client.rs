@@ -42,18 +42,20 @@ impl LspClient {
     /// Call provided method with parameters and wait for the reply. Increase
     /// message ID count.
     pub(crate) fn request<R: Request>(&mut self, params: R::Params) -> anyhow::Result<R::Result> {
+        let id = self.message_id;
+        self.message_id += 1;
+
         let body = serde_json::to_string(&json!({
             "jsonrpc": "2.0",
-            "id": self.message_id,
+            "id": id,
             "method": R::METHOD,
             "params": serde_json::to_value(&params)?,
         }))?;
         self.write_content(&body)?;
-        self.message_id += 1;
 
         loop {
             let mut content = self.read_content()?;
-            if content.get("id").and_then(Value::as_i64) != Some(self.message_id) {
+            if content.get("id").and_then(Value::as_i64) != Some(id) {
                 continue;
             }
             let result = content

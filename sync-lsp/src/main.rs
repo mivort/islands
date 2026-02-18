@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
     let cwd = std::env::current_dir()?;
     let root_uri: Uri = format!("file://{}", cwd.display()).parse()?;
 
-    let _init_result = client
+    let init = client
         .request::<request::Initialize>(InitializeParams {
             workspace_folders: Some(vec![WorkspaceFolder {
                 uri: root_uri,
@@ -23,7 +23,15 @@ fn main() -> anyhow::Result<()> {
         })
         .context("Init request failed")?;
 
-    println!("Init request processed");
+    if let Some(info) = &init.server_info {
+        println!(
+            "Connected to {} {}",
+            info.name,
+            info.version.as_deref().unwrap_or_default()
+        );
+    } else {
+        println!("Connected to server, no server info provided");
+    }
 
     Ok(())
 }
