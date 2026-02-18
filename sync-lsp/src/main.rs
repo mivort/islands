@@ -1,7 +1,8 @@
 use anyhow::Context as _;
 use lsp_types::{
-    ClientCapabilities, InitializeParams, InitializedParams, Uri, WorkDoneProgressParams,
-    WorkspaceFolder, notification, request,
+    ClientCapabilities, DocumentSymbolParams, DocumentSymbolResponse, InitializeParams,
+    InitializedParams, TextDocumentIdentifier, Uri, WorkDoneProgressParams, WorkspaceFolder,
+    WorkspaceSymbolParams, WorkspaceSymbolResponse, notification, request,
 };
 
 mod client;
@@ -37,6 +38,37 @@ fn main() -> anyhow::Result<()> {
     client
         .notify::<notification::Initialized>(InitializedParams {})
         .context("Ready notification failed")?;
+
+    let query = client
+        .request::<request::WorkspaceSymbolRequest>(WorkspaceSymbolParams {
+            query: "main".into(),
+            ..Default::default()
+        })
+        .context("Unable to perform symbol query")?;
+
+    match query {
+        Some(WorkspaceSymbolResponse::Flat(symbols)) => {
+            println!("{} flat symbols", symbols.len());
+        }
+        _ => {}
+    }
+
+    let query = client
+        .request::<request::DocumentSymbolRequest>(DocumentSymbolParams {
+            text_document: TextDocumentIdentifier {
+                uri: "file://src/main.rs".parse()?,
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+        .context("Unable to perform symbol query")?;
+
+    match query {
+        Some(DocumentSymbolResponse::Flat(symbols)) => {
+            println!("{} flat document symbols", symbols.len());
+        }
+        _ => {}
+    }
 
     Ok(())
 }
