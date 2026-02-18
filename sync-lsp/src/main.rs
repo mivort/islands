@@ -1,6 +1,7 @@
 use anyhow::Context as _;
 use lsp_types::{
-    ClientCapabilities, InitializeParams, Uri, WorkDoneProgressParams, WorkspaceFolder, request,
+    ClientCapabilities, InitializeParams, InitializedParams, Uri, WorkDoneProgressParams,
+    WorkspaceFolder, notification, request,
 };
 
 mod client;
@@ -32,6 +33,10 @@ fn main() -> anyhow::Result<()> {
     } else {
         println!("Connected to server, no server info provided");
     }
+
+    client
+        .notify::<notification::Initialized>(InitializedParams {})
+        .context("Ready notification failed")?;
 
     Ok(())
 }

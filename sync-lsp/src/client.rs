@@ -67,12 +67,11 @@ impl LspClient {
     }
 
     /// Send a notification to LSP server.
-    #[expect(dead_code)]
-    pub(crate) fn notify<N: Notification>(&mut self) -> anyhow::Result<()> {
+    pub(crate) fn notify<N: Notification>(&mut self, params: N::Params) -> anyhow::Result<()> {
         let body = serde_json::to_string(&json!({
             "jsonrpc": "2.0",
             "method": N::METHOD,
-            "params": "",
+            "params": serde_json::to_value(&params)?,
         }))?;
         self.write_content(&body)
             .context("Unable to write notification")
