@@ -6,8 +6,9 @@ async fn main() -> anyhow::Result<()> {
 
     client.initialize().await?;
     client.wait_index().await?;
-
     println!("Indexing complete");
+
+    client.find_symbol().await?;
 
     client.exit().await
 }

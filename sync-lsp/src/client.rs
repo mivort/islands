@@ -4,8 +4,10 @@ use std::process::Stdio;
 use anyhow::Context as _;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    ClientCapabilities, InitializeParams, InitializedParams, NumberOrString, ProgressParams,
-    ProgressParamsValue, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
+    ClientCapabilities, HoverParams, InitializeParams, InitializedParams, NumberOrString,
+    ProgressParams, ProgressParamsValue, TextDocumentIdentifier, TextDocumentPositionParams, Url,
+    WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder, WorkspaceSymbolParams,
+    WorkspaceSymbolResponse,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -16,6 +18,7 @@ use futures::channel::oneshot;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 
+/// Client context instance.
 pub(crate) struct LspClient {
     #[expect(unused)]
     child: Child,
@@ -126,6 +129,47 @@ impl LspClient {
             .take()
             .context("Unable to get indexed recv")?;
         recv.await.context("Unable to wait for indexing completion")
+    }
+
+    /// Perform a workspace lookup for specific symbol.
+    pub async fn find_symbol(&mut self) -> anyhow::Result<()> {
+        let symbol = self
+            .server
+            .symbol(WorkspaceSymbolParams {
+                query: "LspClient".into(),
+                ..Default::default()
+            })
+            .await
+            .context("Unable to search for workspace symbol")?;
+
+        match symbol {
+            Some(WorkspaceSymbolResponse::Flat(symbols)) => {
+                println!("Symbols found: {}", symbols.len());
+                for s in symbols {
+                    println!("Symbol: {:?}", s);
+
+                    let hover = self
+                        .server
+                        .hover(HoverParams {
+                            text_document_position_params: TextDocumentPositionParams {
+                                text_document: TextDocumentIdentifier {
+                                    uri: s.location.uri,
+                                },
+                                position: s.location.range.start,
+                            },
+                            work_done_progress_params: Default::default(),
+                        })
+                        .await?;
+
+                    println!("Hover: {:?}", hover);
+                }
+            }
+            _ => {
+                println!("No symbol found");
+            }
+        }
+
+        Ok(())
     }
 
     /// Wait for LSP server child process completion.
