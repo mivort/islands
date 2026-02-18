@@ -9,5 +9,5 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Indexing complete");
 
-    client.join().await
+    client.exit().await
 }

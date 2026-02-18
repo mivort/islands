@@ -129,7 +129,10 @@ impl LspClient {
     }
 
     /// Wait for LSP server child process completion.
-    pub async fn join(&mut self) -> anyhow::Result<()> {
+    pub async fn exit(&mut self) -> anyhow::Result<()> {
+        self.server.shutdown(()).await?;
+        self.server.exit(())?;
+
         let join = self
             .join
             .take()
