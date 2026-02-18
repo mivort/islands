@@ -1,121 +1,163 @@
-use std::io::{self, BufRead as _, BufReader, Read as _, Write as _};
-use std::process::{ChildStdin, ChildStdout, Command, Stdio};
+use std::ops::ControlFlow;
+use std::process::Stdio;
 
 use anyhow::Context as _;
-use lsp_types::{notification::Notification, request::Request};
-use serde_json::{Value, json};
+use async_lsp::concurrency::ConcurrencyLayer;
+use async_lsp::lsp_types::{
+    ClientCapabilities, InitializeParams, InitializedParams, NumberOrString, ProgressParams,
+    ProgressParamsValue, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
+};
+use async_lsp::panic::CatchUnwindLayer;
+use async_lsp::router::Router;
+use async_lsp::tracing::TracingLayer;
+use async_lsp::{LanguageClient, LanguageServer, ResponseError, ServerSocket};
+use async_process::Child;
+use futures::channel::oneshot;
+use tokio::task::JoinHandle;
+use tower::ServiceBuilder;
 
-/// LSP client instance with in-out references.
 pub(crate) struct LspClient {
-    reader: BufReader<ChildStdout>,
-    writer: ChildStdin,
-
-    /// Message ID which gets auto-incremented on each written message.
-    message_id: i64,
+    #[expect(unused)]
+    child: Child,
+    workdir: Url,
+    server: ServerSocket,
+    indexed_recv: Option<oneshot::Receiver<()>>,
+    join: Option<JoinHandle<()>>,
 }
 
+/// List of known indexing tokens.
+const INDEXING_TOKENS: &[&str] = &["rustAnalyzer/Indexing", "rustAnalyzer/cachePriming"];
+
 impl LspClient {
-    /// Spawn LSP server child process and attach stdin/stdout.
-    pub(crate) fn new(cmd: &str) -> anyhow::Result<Self> {
-        let mut child = Command::new(cmd)
+    /// Spawn LSP server child process.
+    pub fn new(cmd: &str) -> anyhow::Result<Self> {
+        let cwd = std::env::current_dir()?;
+        let workdir: Url = format!("file://{}", cwd.display()).parse()?;
+
+        let (indexed_send, indexed_recv) = oneshot::channel();
+        let router = Router::from_language_client(LspState {
+            indexed_send: Some(indexed_send),
+        });
+
+        let mut child = async_process::Command::new(cmd)
+            .current_dir(&cwd)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::inherit())
+            .kill_on_drop(true)
             .spawn()
-            .with_context(|| format!("Unable to spawn LSP server: {cmd}"))?;
+            .context("Failed run rust-analyzer")?;
 
-        let reader = BufReader::new(
-            child
-                .stdout
-                .take()
-                .context("Unable to attach child stdout")?,
-        );
-        let writer = child.stdin.take().context("Unable to attach child stdin")?;
+        let (mainloop, server) = async_lsp::MainLoop::new_client(|_server| {
+            ServiceBuilder::new()
+                .layer(TracingLayer::default())
+                .layer(CatchUnwindLayer::default())
+                .layer(ConcurrencyLayer::default())
+                .service(router)
+        });
+
+        let stdout = child
+            .stdout
+            .take()
+            .context("Unable to get child process stdout")?;
+        let stdin = child
+            .stdin
+            .take()
+            .context("Unable to get child process stdin")?;
+
+        let mainloop_handle = tokio::spawn(async move {
+            mainloop
+                .run_buffered(stdout, stdin)
+                .await
+                .unwrap_or_else(|_| {
+                    eprintln!("Unable to fetch data from language server process");
+                });
+        });
 
         Ok(Self {
-            reader,
-            writer,
-            message_id: 1,
+            child,
+            workdir,
+            server,
+            join: Some(mainloop_handle),
+            indexed_recv: Some(indexed_recv),
         })
     }
 
-    /// Call provided method with parameters and wait for the reply. Increase
-    /// message ID count.
-    pub(crate) fn request<R: Request>(&mut self, params: R::Params) -> anyhow::Result<R::Result> {
-        let id = self.message_id;
-        self.message_id += 1;
+    /// Send initialization request and notification.
+    pub async fn initialize(&mut self) -> anyhow::Result<()> {
+        let init = self
+            .server
+            .initialize(InitializeParams {
+                workspace_folders: Some(vec![WorkspaceFolder {
+                    name: "root".into(),
+                    uri: self.workdir.clone(),
+                }]),
+                capabilities: ClientCapabilities {
+                    window: Some(WindowClientCapabilities {
+                        work_done_progress: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .await
+            .context("Unable to process initialize request")?;
 
-        let body = serde_json::to_string(&json!({
-            "jsonrpc": "2.0",
-            "id": id,
-            "method": R::METHOD,
-            "params": serde_json::to_value(&params)?,
-        }))?;
-        self.write_content(&body)?;
+        let (name, version) = if let Some(info) = &init.server_info {
+            (
+                info.name.as_str(),
+                info.version.as_deref().unwrap_or("(unknown)"),
+            )
+        } else {
+            ("unknown", "(unknown)")
+        };
 
-        loop {
-            let mut content = self.read_content()?;
-            if content.get("id").and_then(Value::as_i64) != Some(id) {
-                continue;
-            }
-            let result = content
-                .get_mut("result")
-                .context("Missing result value")?
-                .take();
-            return Ok(serde_json::from_value(result).context("Result parsing failed")?);
-        }
+        println!("Initialized: {name} {version}");
+        self.server.initialized(InitializedParams {}).unwrap();
+
+        Ok(())
     }
 
-    /// Send a notification to LSP server.
-    pub(crate) fn notify<N: Notification>(&mut self, params: N::Params) -> anyhow::Result<()> {
-        let body = serde_json::to_string(&json!({
-            "jsonrpc": "2.0",
-            "method": N::METHOD,
-            "params": serde_json::to_value(&params)?,
-        }))?;
-        self.write_content(&body)
-            .context("Unable to write notification")
+    /// Wait for LSP server to report index readyness.
+    pub async fn wait_index(&mut self) -> anyhow::Result<()> {
+        let recv = self
+            .indexed_recv
+            .take()
+            .context("Unable to get indexed recv")?;
+        recv.await.context("Unable to wait for indexing completion")
+    }
+
+    /// Wait for LSP server child process completion.
+    pub async fn join(&mut self) -> anyhow::Result<()> {
+        let join = self
+            .join
+            .take()
+            .context("Unable to get child process join handle")?;
+        join.await
+            .context("Unable to wait for server process completion")
     }
 }
 
-impl LspClient {
-    /// Write data along with content length.
-    fn write_content(&mut self, content: &str) -> io::Result<()> {
-        write!(
-            self.writer,
-            "Content-Length: {}\r\n\r\n{}",
-            content.len(),
-            content
-        )?;
-        self.writer.flush()
-    }
+struct LspState {
+    indexed_send: Option<oneshot::Sender<()>>,
+}
 
-    /// Read response and parse as JSON.
-    fn read_content(&mut self) -> anyhow::Result<serde_json::Value> {
-        let mut content_length: Option<u64> = None;
-        let mut line = String::new();
+impl LanguageClient for LspState {
+    type Error = ResponseError;
+    type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
-        loop {
-            line.clear();
-            self.reader.read_line(&mut line)?;
-            let trimmed = line.trim();
-            if trimmed.is_empty() {
-                break;
-            }
-            if let Some(val) = trimmed.strip_prefix("Content-Length: ") {
-                content_length = Some(val.parse()?);
+    fn progress(&mut self, params: ProgressParams) -> Self::NotifyResult {
+        println!("{:?}: {:?}", params.token, params.value);
+        if matches!(
+            params.value,
+            ProgressParamsValue::WorkDone(WorkDoneProgress::End(_))
+        ) && matches!(params.token, NumberOrString::String(s) if INDEXING_TOKENS.contains(&&*s))
+        {
+            if let Some(tx) = self.indexed_send.take() {
+                let _ = tx.send(());
             }
         }
-
-        let content_length = content_length.context("Missing Content-Length header")?;
-
-        line.clear();
-
-        // TODO: look for a way to avoid resize
-        let mut buf = line.into_bytes();
-        buf.resize(content_length as usize, 0);
-        self.reader.read_exact(&mut buf)?;
-
-        Ok(serde_json::from_slice(&buf).context("Response content parsing failed")?)
+        ControlFlow::Continue(())
     }
 }
