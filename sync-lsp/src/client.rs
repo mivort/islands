@@ -161,7 +161,12 @@ impl LspClient {
                         })
                         .await?;
 
-                    println!("Hover: {:?}", hover);
+                    let hover = match hover {
+                        Some(hover) => hover,
+                        None => continue,
+                    };
+
+                    println!("Hover: {:?}", hover.contents);
                 }
             }
             _ => {
