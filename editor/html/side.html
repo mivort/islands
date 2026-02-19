@@ -1,0 +1,67 @@
+<aside class="flex column">
+  <div class="expand flex column">
+    <label for="side-edit-name">Name</label>
+    <textarea id="side-edit-name"></textarea>
+    <label for="side-edit-ref">Reference</label>
+    <input type="text" id="side-edit-ref" />
+    <label for="side-edit-desc">Description</label>
+    <textarea class="expand" id="side-edit-desc"></textarea>
+    <div class="flex row gap">
+      <label for="side-edit-shape">Shape</label>
+      <select id="side-edit-shape" class="expand">
+        <option selected value>default</option>
+        <option value="ellipse">ellipse</option>
+        <option value="triangle">triangle</option>
+        <option value="round-triangle">round-triangle</option>
+        <option value="rectangle">rectangle</option>
+        <option value="round-rectangle">round-rectangle</option>
+        <option value="bottom-round-rectangle">bottom-round-rectangle</option>
+        <option value="cut-rectangle">cut-rectangle</option>
+        <option value="barrel">barrel</option>
+        <option value="rhomboid">rhomboid</option>
+        <option value="right-rhomboid">right-rhomboid</option>
+        <option value="diamond">diamond</option>
+        <option value="round-diamond">round-diamond</option>
+        <option value="pentagon">pentagon</option>
+        <option value="round-pentagon">round-pentagon</option>
+        <option value="hexagon">hexagon</option>
+        <option value="round-hexagon">round-hexagon</option>
+        <option value="concave-hexagon">concave-hexagon</option>
+        <option value="heptagon">heptagon</option>
+        <option value="round-heptagon">round-heptagon</option>
+        <option value="octagon">octagon</option>
+        <option value="round-octagon">round-octagon</option>
+        <option value="star">star</option>
+        <option value="tag">tag</option>
+        <option value="round-tag">round-tag</option>
+        <option value="vee">vee</option>
+      </select>
+    </div>
+    <div class="flex row gap">
+      <label for="side-edit-size">Size</label>
+      <input type="number" class="expand" id="side-edit-size" value="25" min="5" max="100" step="5" />
+    </div>
+    <div class="flex row gap">
+      <div>
+        <input type="checkbox" id="side-edit-class-fade" />
+        <label for="side-edit-class-fade">Fade</label>
+      </div>
+      <div>
+        <input type="checkbox" id="side-edit-class-draft" />
+        <label for="side-edit-class-draft">Draft</label>
+      </div>
+    </div>
+    <div class="flex row gap">
+      <div class="expand">ID</div>
+      <div id="side-edit-id" class="nowrap ellipsis"></div>
+    </div>
+  </div>
+  <input id="side-file-picker" type="file" accept=".json,.csv" multiple />
+  <div class="flex row">
+    <button id="side-fit-button">Fit</button>
+    <button id="side-fit-sel-button">Sel</button>
+    <button id="side-undo-button">Undo</button>
+    <button id="side-redo-button">Redo</button>
+    <button id="side-export-button">Export</button>
+  </div>
+</aside>
