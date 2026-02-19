@@ -1,3 +1,4 @@
+use crate::noderef::NodeRef;
 use std::ops::ControlFlow;
 use std::process::Stdio;
 
@@ -133,11 +134,11 @@ impl LspClient {
     }
 
     /// Perform a workspace lookup for specific symbol.
-    pub async fn find_symbol(&mut self, query: &str) -> anyhow::Result<()> {
+    pub async fn find_symbol(&mut self, node_ref: NodeRef) -> anyhow::Result<()> {
         let symbol = self
             .server
             .symbol(WorkspaceSymbolParams {
-                query: query.into(),
+                query: node_ref.base,
                 ..Default::default()
             })
             .await
