@@ -9,4 +9,5 @@ export enum Data {
 
 	REF = 'ref',
 	DESC = 'desc',
+	DOC = 'doc',
 }

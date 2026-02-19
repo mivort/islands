@@ -10,6 +10,7 @@ export class SidePanel {
   shape: HTMLSelectElement | null;
   size: HTMLInputElement | null;
   desc: HTMLTextAreaElement | null;
+  doc: HTMLDivElement | null;
 
   classFade: HTMLInputElement | null;
   classDraft: HTMLInputElement | null;
@@ -50,6 +51,7 @@ export class SidePanel {
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
     if (this.desc) this.desc.value = node.data(Data.DESC) ?? '';
+    if (this.doc) this.doc.innerText = node.data(Data.DOC) ?? '';
     if (this.classFade) this.classFade.checked = node.hasClass('fade');
     if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
   }
@@ -59,6 +61,7 @@ export class SidePanel {
     if (this.name) this.name.value = '';
     if (this.ref) this.ref.value = '';
     if (this.desc) this.desc.value = '';
+    if (this.doc) this.doc.innerText = '';
     if (this.classFade) this.classFade.checked = false;
     if (this.classDraft) this.classDraft.checked = false;
   }
@@ -71,6 +74,7 @@ export class SidePanel {
     this.shape = document.getElementById('side-edit-shape') as HTMLSelectElement;
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
+    this.doc = document.getElementById('side-view-doc') as HTMLDivElement;
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
