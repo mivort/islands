@@ -540,6 +540,8 @@ dependencies = [
  "async-process",
  "clap",
  "futures",
+ "serde",
+ "serde_derive",
  "serde_json",
  "tokio",
  "tower",
