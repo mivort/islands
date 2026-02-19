@@ -6,6 +6,7 @@ export class SidePanel {
   id: HTMLElement | null;
   name: HTMLTextAreaElement | null;
   ref: HTMLInputElement | null;
+  shape: HTMLSelectElement | null;
   desc: HTMLTextAreaElement | null;
 
   classFade: HTMLInputElement | null;
@@ -44,6 +45,7 @@ export class SidePanel {
   showElement(node: cytoscape.NodeSingular) {
     if (this.name) this.name.value = node.data('name') ?? '';
     if (this.ref) this.ref.value = node.data('ref') ?? '';
+    if (this.shape) this.shape.value = node.data('shape') ?? '';
     if (this.desc) this.desc.value = node.data('desc') ?? '';
     if (this.classFade) this.classFade.checked = node.hasClass('fade');
     if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
@@ -63,6 +65,7 @@ export class SidePanel {
     this.id = document.getElementById('side-edit-id');
     this.name = document.getElementById('side-edit-name') as HTMLTextAreaElement;
     this.ref = document.getElementById('side-edit-ref') as HTMLInputElement;
+    this.shape = document.getElementById('side-edit-shape') as HTMLSelectElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
     this.name?.addEventListener('change', (event) => {
@@ -82,6 +85,19 @@ export class SidePanel {
       }
       for (const node of nodes) {
         node.removeData('ref');
+      }
+    });
+    this.shape?.addEventListener('change', (event) => {
+      const nodes = this.cy.nodes(':selected');
+      const value = (event.target as any).value;
+      if (value) {
+        for (const node of nodes) {
+          node.data('shape', value);
+        }
+        return;
+      }
+      for (const node of nodes) {
+        node.removeData('shape');
       }
     });
     this.desc?.addEventListener('change', (event) => {

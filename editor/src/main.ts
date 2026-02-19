@@ -44,6 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        selector: 'node[shape]',
+        css: {
+          'shape': 'data(shape)' as cytoscape.Css.NodeShape,
+        },
+      },
+      {
         selector: ':parent',
         css: {
           'shape': 'round-rectangle',
