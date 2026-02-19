@@ -40,6 +40,9 @@ pub(crate) struct Data {
     pub desc: Option<String>,
     pub r#ref: Option<String>,
 
+    /// Result of reference check - applied during sync.
+    pub valid: Option<bool>,
+
     /// Location of referenced item - applied during sync.
     pub refloc: Option<String>,
 

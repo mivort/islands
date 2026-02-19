@@ -3,6 +3,9 @@ mod client;
 mod graph;
 mod noderef;
 
+use std::fs;
+
+use anyhow::Context as _;
 use clap::Parser as _;
 use noderef::{NodeRef, NodeRefParams};
 use unwrap_or::{unwrap_ok_or, unwrap_some_or};
@@ -23,11 +26,29 @@ async fn main() -> anyhow::Result<()> {
     client.wait_index().await?;
     println!("Indexing complete");
 
+    let mut missing_refs = 0usize;
+
     for node in &mut graph.nodes {
-        let node_ref = unwrap_some_or!(&node.data.r#ref, { continue });
-        match parse_ref(&node_ref) {
+        let ref_uri = unwrap_some_or!(&node.data.r#ref, { continue });
+        match parse_ref(&ref_uri) {
             (RefType::Lsp, node_ref) => {
-                client.find_symbol(node_ref).await?;
+                let data = client.find_symbol(node_ref).await?;
+                if let Some(data) = data {
+                    if !args.update {
+                        continue;
+                    }
+
+                    node.data.refdoc = Some(data.hover);
+                    node.data.valid = Some(true);
+                } else {
+                    missing_refs += 1;
+                    eprintln!("Reference not found: {}", ref_uri);
+                    if !args.update {
+                        continue;
+                    }
+
+                    node.data.valid = Some(false);
+                }
             }
             (RefType::File, _node_ref) => {}
             (RefType::Unknown, node_ref) => {
@@ -36,7 +57,25 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    client.exit().await
+    client.exit().await?;
+
+    if missing_refs > 0 {
+        eprintln!("Found {} missing references", missing_refs);
+
+        if !args.update {
+            std::process::exit(1);
+        }
+    } else {
+        println!("No missing references found");
+    }
+
+    if args.update {
+        let output =
+            serde_json::to_string_pretty(&graph).context("Unable to serialize graph data")?;
+        fs::write(&args.target, &output)?;
+    }
+
+    Ok(())
 }
 
 enum RefType {

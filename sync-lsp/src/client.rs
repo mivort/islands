@@ -5,8 +5,8 @@ use std::process::Stdio;
 use anyhow::Context as _;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    ClientCapabilities, HoverParams, InitializeParams, InitializedParams, NumberOrString,
-    ProgressParams, ProgressParamsValue, SymbolInformation, TextDocumentIdentifier,
+    ClientCapabilities, Hover, HoverContents, HoverParams, InitializeParams, InitializedParams,
+    NumberOrString, ProgressParams, ProgressParamsValue, SymbolInformation, TextDocumentIdentifier,
     TextDocumentPositionParams, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
     WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
@@ -136,7 +136,7 @@ impl LspClient {
     }
 
     /// Perform a workspace lookup for specific symbol.
-    pub async fn find_symbol(&mut self, node_ref: NodeRef) -> anyhow::Result<()> {
+    pub async fn find_symbol(&mut self, node_ref: NodeRef) -> anyhow::Result<Option<LspData>> {
         let symbol = self
             .server
             .symbol(WorkspaceSymbolParams {
@@ -150,10 +150,7 @@ impl LspClient {
             Some(WorkspaceSymbolResponse::Flat(symbols)) => {
                 self.match_symbol(symbols, &node_ref).await
             }
-            _ => {
-                println!("No symbol found");
-                Ok(())
-            }
+            _ => Ok(None),
         }
     }
 
@@ -178,7 +175,7 @@ impl LspClient {
         &mut self,
         symbols: Vec<SymbolInformation>,
         node_ref: &NodeRef,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<LspData>> {
         for s in symbols {
             if s.name != node_ref.base {
                 continue;
@@ -189,8 +186,6 @@ impl LspClient {
             if !node_ref.params.matches_uri(&s.location.uri) {
                 continue;
             }
-
-            println!("Symbol: {:?}", s);
 
             let hover = self
                 .server
@@ -210,10 +205,10 @@ impl LspClient {
                 None => continue,
             };
 
-            println!("Hover: {:?}", hover.contents);
+            return Ok(Some(LspData::from_hover(hover)));
         }
 
-        Ok(())
+        Ok(None)
     }
 }
 
@@ -244,5 +239,21 @@ impl LanguageClient for LspState {
             }
         }
         ControlFlow::Continue(())
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct LspData {
+    pub hover: String,
+}
+
+impl LspData {
+    fn from_hover(hover: Hover) -> Self {
+        match hover.contents {
+            HoverContents::Markup(content) => Self {
+                hover: content.value,
+            },
+            _ => Default::default(),
+        }
     }
 }
