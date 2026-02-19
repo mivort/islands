@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
         css: {
           'outline-color': '#333',
           'outline-width': 2,
-          'outline-style': 'dashed',
           'outline-offset': 2,
           'outline-opacity': 0.5,
         },

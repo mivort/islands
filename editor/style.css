@@ -17,6 +17,11 @@ aside {
   background-color: #333;
 }
 
+#side-view-doc {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 textarea {
   resize: vertical;
 }
