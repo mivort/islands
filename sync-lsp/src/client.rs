@@ -133,11 +133,11 @@ impl LspClient {
     }
 
     /// Perform a workspace lookup for specific symbol.
-    pub async fn find_symbol(&mut self) -> anyhow::Result<()> {
+    pub async fn find_symbol(&mut self, query: &str) -> anyhow::Result<()> {
         let symbol = self
             .server
             .symbol(WorkspaceSymbolParams {
-                query: "LspClient".into(),
+                query: query.into(),
                 ..Default::default()
             })
             .await
@@ -210,11 +210,10 @@ impl LanguageClient for LspState {
     type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
     fn progress(&mut self, params: ProgressParams) -> Self::NotifyResult {
-        println!("{:?}: {:?}", params.token, params.value);
         if matches!(
             params.value,
             ProgressParamsValue::WorkDone(WorkDoneProgress::End(_))
-        ) && matches!(params.token, NumberOrString::String(s) if INDEXING_TOKENS.contains(&&*s))
+        ) && matches!(params.token, NumberOrString::String(ref s) if INDEXING_TOKENS.contains(&&**s))
         {
             if let Some(tx) = self.indexed_send.take() {
                 let _ = tx.send(());
