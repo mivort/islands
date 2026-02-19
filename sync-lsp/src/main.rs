@@ -1,8 +1,13 @@
+use clap::Parser as _;
+
+mod args;
 mod client;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    let mut client = client::LspClient::new("rust-analyzer")?;
+    let args = args::Args::parse();
+
+    let mut client = client::LspClient::new(&args.lsp)?;
 
     client.initialize().await?;
     client.wait_index().await?;
