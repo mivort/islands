@@ -41,7 +41,7 @@ impl NodeRefParams {
     /// Check if node reference matches symbol location.
     pub fn matches_uri(&self, uri: &Url) -> bool {
         let path = unwrap_some_or!(&self.path, return true);
-        uri.path() == path
+        uri.path().ends_with(path)
     }
 }
 
