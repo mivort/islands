@@ -1,4 +1,4 @@
-use crate::noderef::NodeRef;
+use crate::noderef::{NodeRef, NodeRefParams};
 use std::ops::ControlFlow;
 use std::process::Stdio;
 
@@ -6,9 +6,9 @@ use anyhow::Context as _;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
     ClientCapabilities, HoverParams, InitializeParams, InitializedParams, NumberOrString,
-    ProgressParams, ProgressParamsValue, TextDocumentIdentifier, TextDocumentPositionParams, Url,
-    WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder, WorkspaceSymbolParams,
-    WorkspaceSymbolResponse,
+    ProgressParams, ProgressParamsValue, SymbolInformation, TextDocumentIdentifier,
+    TextDocumentPositionParams, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
+    WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -126,6 +126,8 @@ impl LspClient {
 
     /// Wait for LSP server to report index readyness.
     pub async fn wait_index(&mut self) -> anyhow::Result<()> {
+        println!("Waiting for index to be loaded...");
+
         let recv = self
             .indexed_recv
             .take()
@@ -146,37 +148,13 @@ impl LspClient {
 
         match symbol {
             Some(WorkspaceSymbolResponse::Flat(symbols)) => {
-                println!("Symbols found: {}", symbols.len());
-                for s in symbols {
-                    println!("Symbol: {:?}", s);
-
-                    let hover = self
-                        .server
-                        .hover(HoverParams {
-                            text_document_position_params: TextDocumentPositionParams {
-                                text_document: TextDocumentIdentifier {
-                                    uri: s.location.uri,
-                                },
-                                position: s.location.range.start,
-                            },
-                            work_done_progress_params: Default::default(),
-                        })
-                        .await?;
-
-                    let hover = match hover {
-                        Some(hover) => hover,
-                        None => continue,
-                    };
-
-                    println!("Hover: {:?}", hover.contents);
-                }
+                self.match_symbol(symbols, node_ref.params).await
             }
             _ => {
                 println!("No symbol found");
+                Ok(())
             }
         }
-
-        Ok(())
     }
 
     /// Wait for LSP server child process completion.
@@ -191,6 +169,48 @@ impl LspClient {
             .context("Unable to get child process join handle")?;
         join.await
             .context("Unable to wait for server process completion")
+    }
+}
+
+impl LspClient {
+    /// Iterate over list of found symbols and try to match the parameters.
+    async fn match_symbol(
+        &mut self,
+        symbols: Vec<SymbolInformation>,
+        params: NodeRefParams,
+    ) -> anyhow::Result<()> {
+        for s in symbols {
+            if !params.matches_kind(s.kind) {
+                continue;
+            }
+            if !params.matches_uri(&s.location.uri) {
+                continue;
+            }
+
+            println!("Symbol: {:?}", s);
+
+            let hover = self
+                .server
+                .hover(HoverParams {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier {
+                            uri: s.location.uri,
+                        },
+                        position: s.location.range.start,
+                    },
+                    work_done_progress_params: Default::default(),
+                })
+                .await?;
+
+            let hover = match hover {
+                Some(hover) => hover,
+                None => continue,
+            };
+
+            println!("Hover: {:?}", hover.contents);
+        }
+
+        Ok(())
     }
 }
 

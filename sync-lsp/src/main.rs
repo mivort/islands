@@ -19,7 +19,6 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let mut client = client::LspClient::new(&args.lsp)?;
-
     client.initialize().await?;
     client.wait_index().await?;
     println!("Indexing complete");
