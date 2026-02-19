@@ -152,12 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodes = cy.nodes(':selected');
     if (reverse) {
       for (const node of nodes) {
-        cy.add({ data: { group: 'edges', target: node.id(), source: target } });
+        cy.add({ group: 'edges', data: { target: node.id(), source: target } });
       }
       return;
     }
     for (const node of nodes) {
-      cy.add({ data: { group: 'edges', source: node.id(), target } });
+      cy.add({ group: 'edges', data: { source: node.id(), target } });
     }
   };
 
@@ -170,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
         selector: '',
         onClickFunction: (event) => {
           undo.do('add', {
-            data: { group: 'nodes' },
+            group: 'nodes',
+            data: {},
             position: {
               x: event.position.x,
               y: event.position.y,
@@ -185,7 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
         selector: '',
         onClickFunction: (event) => {
           const nodes = cy.add({
-            data: { group: 'nodes' },
+            group: 'nodes',
+            data: {},
             position: {
               x: event.position.x,
               y: event.position.y,
@@ -205,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const selected = cy.nodes(':selected')[0];
           if (!selected) return;
           cy.add({
-            data: { group: 'nodes', parent: selected.id() },
+            group: 'nodes',
+            data: { parent: selected.id() },
             position: {
               x: event.position.x,
               y: event.position.y,
@@ -273,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const classes = event.target.classes();
           const data = event.target.data();
           event.target.remove();
-          cy.add({ data: { ...data, group: 'edges', source, target }, classes });
+          cy.add({ group: 'edges', data: { ...data, source, target }, classes });
         },
       },
       {
