@@ -5,8 +5,9 @@ use std::process::Stdio;
 use anyhow::Context as _;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    ClientCapabilities, Hover, HoverContents, HoverParams, InitializeParams, InitializedParams,
-    NumberOrString, ProgressParams, ProgressParamsValue, SymbolInformation, TextDocumentIdentifier,
+    ClientCapabilities, Hover, HoverClientCapabilities, HoverContents, HoverParams,
+    InitializeParams, InitializedParams, MarkupKind, NumberOrString, ProgressParams,
+    ProgressParamsValue, SymbolInformation, TextDocumentClientCapabilities, TextDocumentIdentifier,
     TextDocumentPositionParams, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
     WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
@@ -100,6 +101,13 @@ impl LspClient {
                 capabilities: ClientCapabilities {
                     window: Some(WindowClientCapabilities {
                         work_done_progress: Some(true),
+                        ..Default::default()
+                    }),
+                    text_document: Some(TextDocumentClientCapabilities {
+                        hover: Some(HoverClientCapabilities {
+                            content_format: Some(vec![MarkupKind::Markdown]),
+                            ..Default::default()
+                        }),
                         ..Default::default()
                     }),
                     ..Default::default()
