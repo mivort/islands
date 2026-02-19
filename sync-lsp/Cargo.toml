@@ -9,9 +9,10 @@ async-lsp = "0.2.2"
 async-process = "2.5.0"
 clap = { version = "4.5.59", features = ["derive"] }
 futures = { version = "0.3.32", default-features = false, features = ["async-await", "std"] }
+indexmap = { version = "2.13.0", features = ["serde"] }
 serde = "1.0.228"
 serde_derive = "1.0.228"
-serde_json = "1.0.149"
+serde_json = { version = "1.0.149", features = ["preserve_order"] }
 serde_urlencoded = "0.7.1"
 tokio = { version = "1.49.0", features = ["macros", "rt"] }
 tower = "0.5.3"

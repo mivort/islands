@@ -26,11 +26,13 @@ async fn main() -> anyhow::Result<()> {
     client.wait_index().await?;
     println!("Indexing complete");
 
+    let mut checked_refs = 0usize;
     let mut missing_refs = 0usize;
 
     for node in &mut graph.nodes {
         let ref_uri = unwrap_some_or!(&node.data.r#ref, { continue });
-        match parse_ref(&ref_uri) {
+        checked_refs += 1;
+        match parse_ref(ref_uri) {
             (RefType::Lsp, node_ref) => {
                 let data = client.find_symbol(node_ref).await?;
                 if let Some(data) = data {
@@ -38,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
                         continue;
                     }
 
-                    node.data.refdoc = Some(data.hover);
+                    node.data.doc = Some(data.hover);
                     node.data.valid = Some(true);
                 } else {
                     missing_refs += 1;
@@ -50,17 +52,23 @@ async fn main() -> anyhow::Result<()> {
                     node.data.valid = Some(false);
                 }
             }
-            (RefType::File, _node_ref) => {}
+            (RefType::File, node_ref) => {
+                eprintln!("File refs are not supported yet: {}", node_ref.base);
+                missing_refs += 1;
+            }
             (RefType::Unknown, node_ref) => {
                 eprintln!("Unknown reference type: {}", node_ref.base);
+                missing_refs += 1;
             }
         }
     }
 
     client.exit().await?;
 
+    println!("References validated: {checked_refs}");
+
     if missing_refs > 0 {
-        eprintln!("Found {} missing references", missing_refs);
+        eprintln!("Found {missing_refs} missing references");
 
         if !args.update {
             std::process::exit(1);
