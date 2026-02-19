@@ -1,4 +1,4 @@
-use crate::noderef::{NodeRef, NodeRefParams};
+use crate::noderef::NodeRef;
 use std::ops::ControlFlow;
 use std::process::Stdio;
 
@@ -140,7 +140,7 @@ impl LspClient {
         let symbol = self
             .server
             .symbol(WorkspaceSymbolParams {
-                query: node_ref.base,
+                query: node_ref.base.clone(),
                 ..Default::default()
             })
             .await
@@ -148,7 +148,7 @@ impl LspClient {
 
         match symbol {
             Some(WorkspaceSymbolResponse::Flat(symbols)) => {
-                self.match_symbol(symbols, node_ref.params).await
+                self.match_symbol(symbols, &node_ref).await
             }
             _ => {
                 println!("No symbol found");
@@ -177,13 +177,16 @@ impl LspClient {
     async fn match_symbol(
         &mut self,
         symbols: Vec<SymbolInformation>,
-        params: NodeRefParams,
+        node_ref: &NodeRef,
     ) -> anyhow::Result<()> {
         for s in symbols {
-            if !params.matches_kind(s.kind) {
+            if s.name != node_ref.base {
                 continue;
             }
-            if !params.matches_uri(&s.location.uri) {
+            if !node_ref.params.matches_kind(s.kind) {
+                continue;
+            }
+            if !node_ref.params.matches_uri(&s.location.uri) {
                 continue;
             }
 

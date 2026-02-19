@@ -21,7 +21,6 @@ impl NodeRef {
     }
 }
 
-#[expect(unused)]
 #[derive(Default, Deserialize)]
 pub(crate) struct NodeRefParams {
     pub kind: Option<SymbolKind>,
