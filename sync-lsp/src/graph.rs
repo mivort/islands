@@ -1,42 +1,45 @@
+use std::fs;
+use std::path::Path;
+
+use anyhow::Context as _;
 use serde_derive::{Deserialize, Serialize};
 
 /// Graph data which loosely follows Cytoscape.js format, along with some
 /// additional properties.
-#[expect(unused)]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Graph {
-    nodes: Vec<Entry>,
-    edges: Vec<Entry>,
+    pub nodes: Vec<Entry>,
+    pub edges: Vec<Entry>,
     // TODO: store settings on this level
 }
 
 /// Node or edge entry.
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Entry {
-    group: Group,
-    data: Data,
-    position: Position,
-    removed: bool,
-    selected: bool,
-    selectable: bool,
-    locked: bool,
-    grabbable: bool,
-    pannable: bool,
-    classes: String,
+    pub group: Group,
+    pub data: Data,
+    pub position: Position,
+    pub removed: bool,
+    pub selected: bool,
+    pub selectable: bool,
+    pub locked: bool,
+    pub grabbable: bool,
+    pub pannable: bool,
+    pub classes: String,
 }
 
 /// Single entry, either node or edge.
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Data {
-    name: String,
-    desc: String,
-    r#ref: String,
+    pub name: Option<String>,
+    pub desc: Option<String>,
+    pub r#ref: Option<String>,
 
     /// Location of referenced item - applied during sync.
-    refloc: Option<String>,
+    pub refloc: Option<String>,
 
     /// Attached document for referenced item - applied during sync.
-    refdoc: Option<String>,
+    pub refdoc: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,4 +53,11 @@ pub(crate) enum Group {
 pub(crate) struct Position {
     x: f64,
     y: f64,
+}
+
+impl Graph {
+    pub fn from_json(path: &Path) -> anyhow::Result<Self> {
+        serde_json::from_str(&fs::read_to_string(path).context("Unable to read graph JSON file")?)
+            .context("Unable to parse graph JSON file")
+    }
 }
