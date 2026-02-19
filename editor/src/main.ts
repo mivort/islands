@@ -7,6 +7,7 @@ cytoscape.use(contextMenus);
 cytoscape.use(undoRedo);
 
 import 'cytoscape-context-menus/cytoscape-context-menus.css';
+import { Data } from './data';
 
 document.addEventListener('DOMContentLoaded', () => {
   const cy = cytoscape({
@@ -23,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: 'node[name]',
+        selector: `node[${Data.NAME}]`,
         css: {
-          'label': 'data(name)',
+          'label': `data(${Data.NAME})`,
           'font-family': 'monospace',
           'text-wrap': 'wrap',
           'text-margin-y': -2,
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: 'node[ref]',
+        selector: `node[${Data.REF}]`,
         css: {
           'outline-color': '#333',
           'outline-width': 2,
@@ -44,9 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: 'node[shape]',
+        selector: `node[${Data.SHAPE}]`,
         css: {
-          'shape': 'data(shape)' as cytoscape.Css.NodeShape,
+          'shape': `data(${Data.SHAPE})` as cytoscape.Css.NodeShape,
+        },
+      },
+      {
+        selector: `node[${Data.SIZE}]`,
+        css: {
+          'width': `data(${Data.SIZE})`,
+          'height': `data(${Data.SIZE})`,
         },
       },
       {

@@ -19,7 +19,7 @@
           <textarea class="expand" id="side-edit-desc"></textarea>
           <div class="flex row gap">
             <label for="side-edit-shape">Shape</label>
-            <select class="expand" id="side-edit-shape">
+            <select id="side-edit-shape" class="expand">
               <option selected value>default</option>
               <option value="ellipse">ellipse</option>
               <option value="triangle">triangle</option>
@@ -47,6 +47,10 @@
               <option value="round-tag">round-tag</option>
               <option value="vee">vee</option>
             </select>
+          </div>
+          <div class="flex row gap">
+            <label for="side-edit-size">Size</label>
+            <input type="number" class="expand" id="side-edit-size" value="25" min="5" max="100" step="5" />
           </div>
           <div class="flex row gap">
             <div>
