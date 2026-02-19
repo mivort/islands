@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 use anyhow::Context as _;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// Graph data which loosely follows Cytoscape.js format, along with some
 /// additional properties.
@@ -10,7 +12,10 @@ use serde_derive::{Deserialize, Serialize};
 pub(crate) struct Graph {
     pub nodes: Vec<Entry>,
     pub edges: Vec<Entry>,
+
     // TODO: store settings on this level
+    #[serde(flatten)]
+    pub data: HashMap<String, Value>,
 }
 
 /// Node or edge entry.
@@ -40,6 +45,10 @@ pub(crate) struct Data {
 
     /// Attached document for referenced item - applied during sync.
     pub refdoc: Option<String>,
+
+    /// Remaining fields to maintain the custom metadata on serialization.
+    #[serde(flatten)]
+    pub data: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize)]

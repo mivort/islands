@@ -10,4 +10,8 @@ pub(crate) struct Args {
     /// LSP server command.
     #[arg(long, default_value_t = Box::from("rust-analyzer"))]
     pub lsp: Box<str>,
+
+    /// Apply changes to the target. If not enabled, only a validation will be performed.
+    #[arg(long, short, default_value_t = false)]
+    pub update: bool,
 }
