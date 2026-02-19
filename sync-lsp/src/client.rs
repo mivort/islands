@@ -229,6 +229,7 @@ impl LanguageClient for LspState {
     type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
     fn progress(&mut self, params: ProgressParams) -> Self::NotifyResult {
+        println!("LSP progress: {params:?}");
         if matches!(
             params.value,
             ProgressParamsValue::WorkDone(WorkDoneProgress::End(_))
