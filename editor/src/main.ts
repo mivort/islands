@@ -44,6 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        selector: `node[${Data.VALID}][!${Data.VALID}]`,
+        css: {
+          'outline-color': '#900',
+          'outline-width': 4,
+          'outline-offset': 2,
+          'outline-opacity': 1,
+        },
+      },
+      {
         selector: `node[${Data.SHAPE}]`,
         css: {
           'shape': `data(${Data.SHAPE})` as cytoscape.Css.NodeShape,

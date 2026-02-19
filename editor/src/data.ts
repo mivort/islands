@@ -8,6 +8,7 @@ export enum Data {
 	SIZE = 'size',
 
 	REF = 'ref',
+	VALID = 'valid',
 	DESC = 'desc',
 	DOC = 'doc',
 }
