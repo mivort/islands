@@ -30,6 +30,9 @@ pub(crate) struct LspClient {
     server: ServerSocket,
     indexed_recv: Option<oneshot::Receiver<()>>,
     join: Option<JoinHandle<()>>,
+
+    // TODO: introduce a logging facility
+    debug: bool,
 }
 
 /// List of known indexing tokens.
@@ -37,7 +40,7 @@ const INDEXING_TOKENS: &[&str] = &["rustAnalyzer/Indexing", "rustAnalyzer/cacheP
 
 impl LspClient {
     /// Spawn LSP server child process.
-    pub fn new(cmd: &str) -> anyhow::Result<Self> {
+    pub fn new(cmd: &str, debug: bool) -> anyhow::Result<Self> {
         let cwd = std::env::current_dir()?;
         let workdir: Url = format!("file://{}/", cwd.display()).parse()?;
 
@@ -88,6 +91,7 @@ impl LspClient {
             server,
             join: Some(mainloop_handle),
             indexed_recv: Some(indexed_recv),
+            debug,
         })
     }
 
@@ -320,6 +324,13 @@ impl LspClient {
         let (current, remainder) = path.split_once('/').unwrap_or((path, ""));
 
         for symbol in symbols {
+            if self.debug {
+                println!(
+                    "Matching symbol '{}' ({:?}) with '{}' + '{}'",
+                    symbol.name, symbol.kind, current, remainder
+                );
+            }
+
             if symbol.name != current {
                 continue;
             }

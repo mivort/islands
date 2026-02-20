@@ -14,4 +14,8 @@ pub(crate) struct Args {
     /// Apply changes to the target. If not enabled, only a validation will be performed.
     #[arg(long, short, default_value_t = false)]
     pub update: bool,
+
+    /// Enable verbose debug output.
+    #[arg(long, short, default_value_t = false)]
+    pub debug: bool,
 }

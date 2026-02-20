@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
         graph.edges.len()
     );
 
-    let mut client = client::LspClient::new(&args.lsp)?;
+    let mut client = client::LspClient::new(&args.lsp, args.debug)?;
     client.initialize().await?;
     client.wait_index().await?;
     println!("Indexing complete");

@@ -156,4 +156,10 @@ fn parse_ref() {
     assert!(matches!(node_ref.params.kind, Some(KindMarker::Function)));
     assert_eq!(node_ref.path, "src/main.rs");
     assert_eq!(node_ref.hash, "main");
+
+    let node_ref = NodeRef::parse_ref("lsp://src/main.rs?kind=function").unwrap();
+    assert!(matches!(node_ref.schema, RefType::Lsp));
+    assert!(matches!(node_ref.params.kind, Some(KindMarker::Function)));
+    assert_eq!(node_ref.path, "src/main.rs");
+    assert_eq!(node_ref.hash, "");
 }
