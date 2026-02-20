@@ -1,6 +1,8 @@
 import cytoscape from 'cytoscape';
-import { Data } from './data';
+import { Data, ElementChangeEvent } from './data';
 import { LocationView } from './components/location';
+import { DocView } from './components/docview';
+import { Events } from './data';
 
 /** Side panel state. */
 export class SidePanel {
@@ -11,27 +13,41 @@ export class SidePanel {
   shape: HTMLSelectElement | null;
   size: HTMLInputElement | null;
   desc: HTMLTextAreaElement | null;
-  location: LocationView;
-  doc: HTMLDivElement | null;
+
+  /** ID of the currently displayed node or edge in the side panel. */
+  current: string | null;
 
   classFade: HTMLInputElement | null;
   classDraft: HTMLInputElement | null;
 
   /** Current file name for saving. */
-  filename: string = 'islands.json';
+  filename = 'islands.json';
 
   /** Update the display of selected nodes. */
   showSelected() {
-    const nodes = this.cy.elements(':selected');
-    if (nodes.length === 0) {
+    const elements = this.cy.elements(':selected');
+
+    let selection: string | null;
+
+    if (elements.length === 0) {
+      selection = null;
       this.showId('');
       this.hideElement();
-    } else if (nodes.length === 1) {
-      this.showId(nodes[0].id());
-      this.showElement(nodes[0]);
+    } else if (elements.length === 1) {
+      selection = elements[0].id();
+      this.showId(selection);
+      this.showElement(elements[0]);
     } else {
-      this.showId(`<${nodes.length} selected>`);
-      this.showElement(nodes[0]);
+      selection = elements[0].id();
+      this.showId(`<${elements.length} selected>`);
+      this.showElement(elements[0]);
+    }
+
+    if (this.current != selection) {
+      this.current = selection;
+      window.dispatchEvent(new CustomEvent<ElementChangeEvent>(Events.GRAPH_ELEMENT_CHANGE, {
+        detail: { element: elements[0] },
+      }));
     }
   }
 
@@ -53,7 +69,6 @@ export class SidePanel {
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
     if (this.desc) this.desc.value = node.data(Data.DESC) ?? '';
-    if (this.doc) this.doc.innerText = node.data(Data.DOC) ?? '';
     if (this.classFade) this.classFade.checked = node.hasClass('fade');
     if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
   }
@@ -63,7 +78,6 @@ export class SidePanel {
     if (this.name) this.name.value = '';
     if (this.ref) this.ref.value = '';
     if (this.desc) this.desc.value = '';
-    if (this.doc) this.doc.innerText = '';
     if (this.classFade) this.classFade.checked = false;
     if (this.classDraft) this.classDraft.checked = false;
   }
@@ -76,8 +90,9 @@ export class SidePanel {
     this.shape = document.getElementById('side-edit-shape') as HTMLSelectElement;
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
-    this.doc = document.getElementById('side-view-doc') as HTMLDivElement;
-    this.location = new LocationView(cy);
+
+    new LocationView(cy);
+    new DocView();
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');

@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     container: document.getElementById('root'),
     elements: [],
     layout: { name: 'preset' },
+    minZoom: 0.1,
+    maxZoom: 100.0,
     style: [
       {
         selector: 'node',
@@ -109,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         css: {
           'border-style': 'dashed',
           'border-width': 3,
-          'border-dash-pattern': [6, 3],
+          'border-dash-pattern': [12, 3],
         },
       },
       {
@@ -166,8 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setMenuItemsVisible(['unparent'], nodeSelected && isChild);
   });
 
-  cy.on('select', () => side.showSelected());
-  cy.on('unselect', () => side.showSelected());
+  cy.on('select unselect', () => side.showSelected());
 
   /** Create edges starting at selected nodes. */
   const linkWithSelected = (target: string, reverse?: boolean) => {

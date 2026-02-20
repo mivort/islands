@@ -26,6 +26,6 @@ export class LocationView {
 
     copy.addEventListener('click', () => {
       navigator.clipboard.writeText(this.value.innerText);
-    })
+    });
   }
 }
