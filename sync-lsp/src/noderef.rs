@@ -23,8 +23,13 @@ impl NodeRef {
 
 #[derive(Default, Deserialize)]
 pub(crate) struct NodeRefParams {
+    /// Symbol kind.
     pub kind: Option<KindMarker>,
+    /// File path.
     pub path: Option<String>,
+    /// Symbol container value.
+    #[expect(unused)]
+    pub base: Option<String>,
 }
 
 impl NodeRefParams {
