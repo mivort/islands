@@ -7,7 +7,7 @@ use std::fs;
 
 use anyhow::Context as _;
 use clap::Parser as _;
-use noderef::{NodeRef, NodeRefParams};
+use noderef::{NodeRef, RefType};
 use unwrap_or::{unwrap_ok_or, unwrap_some_or};
 
 #[tokio::main(flavor = "current_thread")]
@@ -32,9 +32,15 @@ async fn main() -> anyhow::Result<()> {
     for node in &mut graph.nodes {
         let ref_uri = unwrap_some_or!(&node.data.r#ref, { continue });
         checked_refs += 1;
-        match parse_ref(ref_uri) {
-            (RefType::Lsp, node_ref) => {
-                let data = client.find_symbol(node_ref).await?;
+
+        let node_ref = unwrap_ok_or!(NodeRef::parse_ref(ref_uri), _, {
+            eprintln!("Unable to parse reference: {}", ref_uri);
+            continue;
+        });
+
+        match node_ref.schema {
+            RefType::Lsp => {
+                let data = client.find_symbol(&node_ref).await?;
                 if let Some(data) = data {
                     if !args.update {
                         continue;
@@ -52,12 +58,12 @@ async fn main() -> anyhow::Result<()> {
                     node.data.valid = Some(false);
                 }
             }
-            (RefType::File, node_ref) => {
-                eprintln!("File refs are not supported yet: {}", node_ref.base);
+            RefType::File => {
+                eprintln!("File refs are not supported yet: {}", ref_uri);
                 missing_refs += 1;
             }
-            (RefType::Unknown, node_ref) => {
-                eprintln!("Unknown reference type: {}", node_ref.base);
+            RefType::Unknown => {
+                eprintln!("Unknown reference type: {}", ref_uri);
                 missing_refs += 1;
             }
         }
@@ -84,30 +90,4 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-enum RefType {
-    Lsp,
-    File,
-    Unknown,
-}
-
-/// Process the reference and handle the supported ones.
-fn parse_ref(node_ref: &str) -> (RefType, NodeRef) {
-    let node_ref = node_ref.trim_start();
-    if let Some(value) = node_ref.strip_prefix("lsp://") {
-        if let Some((base_ref, params)) = value.split_once('?') {
-            let params = NodeRefParams::from_str(params);
-            let params = unwrap_ok_or!(params, _, {
-                return (RefType::Unknown, NodeRef::base_ref(node_ref.into()));
-            });
-            (RefType::Lsp, NodeRef::params_ref(base_ref.into(), params))
-        } else {
-            (RefType::Lsp, NodeRef::base_ref(value.into()))
-        }
-    } else if let Some(value) = node_ref.strip_prefix("file://") {
-        (RefType::File, NodeRef::base_ref(value.into()))
-    } else {
-        (RefType::Unknown, NodeRef::base_ref(node_ref.into()))
-    }
 }

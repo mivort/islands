@@ -17,3 +17,4 @@ serde_urlencoded = "0.7.1"
 tokio = { version = "1.49.0", features = ["macros", "rt"] }
 tower = "0.5.3"
 unwrap_or = "1.0.1"
+urlencoding = "2.1.3"

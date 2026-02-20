@@ -20,6 +20,7 @@ use async_process::Child;
 use futures::channel::oneshot;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
+use unwrap_or::unwrap_some_or;
 
 /// Client context instance.
 pub(crate) struct LspClient {
@@ -149,26 +150,11 @@ impl LspClient {
     }
 
     /// Perform a workspace lookup for specific symbol.
-    pub async fn find_symbol(&mut self, node_ref: NodeRef) -> anyhow::Result<Option<LspData>> {
-        if node_ref.params.path.is_some() {
+    pub async fn find_symbol(&mut self, node_ref: &NodeRef) -> anyhow::Result<Option<LspData>> {
+        if node_ref.path.len() > 0 {
             return self.find_document_symbol(&node_ref).await;
         }
-
-        let symbol = self
-            .server
-            .symbol(WorkspaceSymbolParams {
-                query: node_ref.base.clone(),
-                ..Default::default()
-            })
-            .await
-            .context("Unable to search for workspace symbol")?;
-
-        match symbol {
-            Some(WorkspaceSymbolResponse::Flat(symbols)) => {
-                self.match_symbol(symbols, &node_ref).await
-            }
-            _ => Ok(None),
-        }
+        self.find_workspace_symbol(&node_ref).await
     }
 
     /// Wait for LSP server child process completion.
@@ -187,14 +173,34 @@ impl LspClient {
 }
 
 impl LspClient {
+    /// Query the specified workspace path.
+    async fn find_workspace_symbol(
+        &mut self,
+        node_ref: &NodeRef,
+    ) -> anyhow::Result<Option<LspData>> {
+        let symbol = self
+            .server
+            .symbol(WorkspaceSymbolParams {
+                query: node_ref.hash.clone(),
+                ..Default::default()
+            })
+            .await
+            .context("Unable to search for workspace symbol")?;
+
+        match symbol {
+            Some(WorkspaceSymbolResponse::Flat(symbols)) => {
+                self.match_flat_symbol(symbols, &node_ref).await
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Query the specified document path.
     async fn find_document_symbol(
         &mut self,
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
-        let uri = self
-            .workdir
-            .join(&node_ref.params.path.as_ref().context("Missing path")?)?;
+        let uri = self.workdir.join(&node_ref.path)?;
         let symbol = self
             .server
             .document_symbol(DocumentSymbolParams {
@@ -206,49 +212,41 @@ impl LspClient {
 
         match symbol {
             Some(DocumentSymbolResponse::Flat(symbols)) => {
-                self.match_symbol(symbols, &node_ref).await
+                self.match_flat_symbol(symbols, &node_ref).await
             }
             Some(DocumentSymbolResponse::Nested(symbols)) => {
-                self.match_document_symbol(symbols, &node_ref).await
+                self.match_nested_symbol(symbols, &node_ref).await
             }
             _ => Ok(None),
         }
     }
 
     /// Iterate over list of found symbols and try to match the parameters.
-    async fn match_symbol(
+    async fn match_flat_symbol(
         &mut self,
         symbols: Vec<SymbolInformation>,
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
         for s in symbols {
-            if s.name != node_ref.base {
+            if s.name != node_ref.hash {
                 continue;
             }
             if !node_ref.params.matches_kind(s.kind) {
                 continue;
             }
 
-            let uri = if let Some(path) = &node_ref.params.path {
-                self.workdir.join(&path)?
-            } else {
-                s.location.uri
-            };
-
-            println!("Location: {:?}", s.location.range);
-
             let hover = self
                 .server
                 .hover(HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier { uri },
+                        text_document: TextDocumentIdentifier {
+                            uri: s.location.uri,
+                        },
                         position: s.location.range.start,
                     },
                     work_done_progress_params: Default::default(),
                 })
                 .await?;
-
-            println!("Hover: {hover:?}");
 
             let hover = match hover {
                 Some(hover) => hover,
@@ -262,47 +260,60 @@ impl LspClient {
     }
 
     /// Iterate over list of found symbols and try to match the parameters.
-    async fn match_document_symbol(
+    async fn match_nested_symbol(
         &mut self,
         symbols: Vec<DocumentSymbol>,
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
-        // TODO: iterate recursively
+        let symbol = self.find_nested_symbol(&symbols, node_ref, &node_ref.hash);
+        let symbol = unwrap_some_or!(symbol, { return Ok(None) });
 
-        for s in symbols {
-            if s.name != node_ref.base {
+        // TODO: match kind in addition to name on the last part
+
+        let uri = self.workdir.join(&node_ref.path)?;
+
+        let hover = self
+            .server
+            .hover(HoverParams {
+                text_document_position_params: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier { uri },
+                    position: symbol.selection_range.start,
+                },
+                work_done_progress_params: Default::default(),
+            })
+            .await?;
+
+        match hover {
+            Some(hover) => Ok(Some(LspData::from_hover(hover))),
+            None => Ok(Some(LspData::default())),
+        }
+    }
+
+    /// Iterate over list of found symbols and try to match the parameters.
+    fn find_nested_symbol<'a>(
+        &self,
+        symbols: &'a [DocumentSymbol],
+        node_ref: &NodeRef,
+        path: &str,
+    ) -> Option<&'a DocumentSymbol> {
+        let (current, remainder) = path.split_once('/').unwrap_or((path, ""));
+
+        for symbol in symbols {
+            if symbol.name != current {
                 continue;
             }
-            if !node_ref.params.matches_kind(s.kind) {
-                continue;
+            if remainder.is_empty() && node_ref.params.matches_kind(symbol.kind) {
+                return Some(symbol);
             }
-
-            let uri = if let Some(path) = &node_ref.params.path {
-                self.workdir.join(&path)?
-            } else {
-                continue;
-            };
-
-            let hover = self
-                .server
-                .hover(HoverParams {
-                    text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier { uri },
-                        position: s.selection_range.start,
-                    },
-                    work_done_progress_params: Default::default(),
-                })
-                .await?;
-
-            let hover = match hover {
-                Some(hover) => hover,
-                None => continue,
-            };
-
-            return Ok(Some(LspData::from_hover(hover)));
+            if let Some(symbols) = &symbol.children {
+                let nested = self.find_nested_symbol(symbols, node_ref, remainder);
+                if nested.is_some() {
+                    return nested;
+                }
+            }
         }
 
-        Ok(None)
+        None
     }
 }
 

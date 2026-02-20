@@ -3,33 +3,74 @@ use async_lsp::lsp_types::SymbolKind;
 use serde::Deserialize;
 use unwrap_or::unwrap_some_or;
 
+#[derive(Default)]
 pub(crate) struct NodeRef {
-    pub base: String,
+    pub schema: RefType,
+    pub path: String,
     pub params: NodeRefParams,
+    pub hash: String,
 }
 
 impl NodeRef {
-    pub fn base_ref(base: String) -> Self {
-        Self {
-            base,
-            params: Default::default(),
-        }
-    }
+    /// Process the reference and handle the supported ones.
+    pub fn parse_ref(node_ref: &str) -> anyhow::Result<Self> {
+        let node_ref = node_ref.trim();
+        let (schema, path) = node_ref
+            .split_once(':')
+            .context("Reference has missing schema")?;
 
-    pub fn params_ref(base: String, params: NodeRefParams) -> Self {
-        Self { base, params }
+        let schema = match schema {
+            "lsp" => RefType::Lsp,
+            "file" => {
+                return Ok(Self {
+                    schema: RefType::File,
+                    path: path.strip_prefix("//").unwrap_or(path).into(),
+                    ..Default::default()
+                });
+            }
+            _ => return Ok(Self::default()),
+        };
+
+        let path = path.strip_prefix("//").unwrap_or(path);
+        let (path, params, hash) = if let Some((path, all_params)) = path.split_once('?') {
+            if let Some((params, hash)) = all_params.split_once('#') {
+                (path, params, hash)
+            } else {
+                (path, all_params, "")
+            }
+        } else {
+            if let Some((path, hash)) = path.split_once('#') {
+                (path, "", hash)
+            } else {
+                (path, "", "")
+            }
+        };
+
+        Ok(Self {
+            schema,
+            path: path.into(),
+            params: NodeRefParams::from_str(params)?,
+            hash: urlencoding::decode(hash)?.into(),
+        })
     }
+}
+
+#[derive(Default)]
+pub(crate) enum RefType {
+    Lsp,
+    File,
+    #[default]
+    Unknown,
 }
 
 #[derive(Default, Deserialize)]
 pub(crate) struct NodeRefParams {
     /// Symbol kind.
     pub kind: Option<KindMarker>,
-    /// File path.
-    pub path: Option<String>,
+
     /// Symbol container value.
     #[expect(unused)]
-    pub base: Option<String>,
+    pub container: Option<String>,
 }
 
 impl NodeRefParams {
@@ -106,4 +147,13 @@ impl KindMarker {
             Self::TypeParameter => SymbolKind::TYPE_PARAMETER,
         }
     }
+}
+
+#[test]
+fn parse_ref() {
+    let node_ref = NodeRef::parse_ref("lsp://src/main.rs?kind=function#main").unwrap();
+    assert!(matches!(node_ref.schema, RefType::Lsp));
+    assert!(matches!(node_ref.params.kind, Some(KindMarker::Function)));
+    assert_eq!(node_ref.path, "src/main.rs");
+    assert_eq!(node_ref.hash, "main");
 }
