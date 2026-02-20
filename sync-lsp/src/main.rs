@@ -28,6 +28,8 @@ async fn main() -> anyhow::Result<()> {
 
     let mut checked_refs = 0usize;
     let mut missing_refs = 0usize;
+    let mut updated_docs = 0usize;
+    let mut updated_locs = 0usize;
 
     for node in &mut graph.nodes {
         let ref_uri = unwrap_some_or!(&node.data.r#ref, { continue });
@@ -46,8 +48,14 @@ async fn main() -> anyhow::Result<()> {
                         continue;
                     }
 
-                    node.data.doc = Some(data.hover);
-                    node.data.location = Some(data.location);
+                    if node.data.doc.as_ref() != Some(&data.hover) {
+                        node.data.doc = Some(data.hover);
+                        updated_docs += 1;
+                    }
+                    if node.data.location.as_ref() != Some(&data.location) {
+                        node.data.location = Some(data.location);
+                        updated_locs += 1;
+                    }
                     node.data.valid = Some(true);
                 } else {
                     missing_refs += 1;
@@ -73,6 +81,12 @@ async fn main() -> anyhow::Result<()> {
     client.exit().await?;
 
     println!("References validated: {checked_refs}");
+    if updated_docs > 0 {
+        println!("Docs updated: {updated_docs}");
+    }
+    if updated_locs > 0 {
+        println!("Locations updated: {updated_locs}");
+    }
 
     if missing_refs > 0 {
         eprintln!("Found {missing_refs} missing references");
