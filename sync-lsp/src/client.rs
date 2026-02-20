@@ -216,6 +216,9 @@ impl LspClient {
         &mut self,
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
+        if self.debug {
+            println!("Query document symbols: {}", node_ref.path);
+        }
         let uri = self.workdir.join(&node_ref.path)?;
         let symbol = self
             .server
@@ -324,14 +327,16 @@ impl LspClient {
         let (current, remainder) = path.split_once('/').unwrap_or((path, ""));
 
         for symbol in symbols {
+            let name = convert_name(&symbol.name);
+
             if self.debug {
                 println!(
-                    "Matching symbol '{}' ({:?}) with '{}' + '{}'",
-                    symbol.name, symbol.kind, current, remainder
+                    "Matching symbol '{name}' ({:?}) with '{}' + '{}'",
+                    symbol.kind, current, remainder
                 );
             }
 
-            if symbol.name != current {
+            if name != current {
                 continue;
             }
             if remainder.is_empty() && node_ref.params.matches_kind(symbol.kind) {
@@ -347,6 +352,33 @@ impl LspClient {
 
         None
     }
+}
+
+/// Remove extra symbols from name and replace spaces and special chars with '-'.
+fn convert_name(name: &str) -> String {
+    let mut out = String::new();
+    let mut last = '-';
+    for c in name.trim().chars() {
+        let char = match c {
+            '?' | '@' | ':' | '!' | '$' | '&' | '(' | ')' | '*' | '-' | '+' | '=' | '~' | '.'
+            | '_' => c,
+            _ if c.is_alphanumeric() => c,
+            _ => '+',
+        };
+        if char != '+' || last != '+' {
+            out.push(char);
+        }
+        last = char;
+    }
+    out
+}
+
+#[test]
+fn name_conversion() {
+    assert_eq!(
+        convert_name("impl MyTrait   for   MyType<R>"),
+        "impl-MyTrait-for-MyType-R-"
+    );
 }
 
 struct LspStop;

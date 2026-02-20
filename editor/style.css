@@ -59,7 +59,7 @@ pre {
   overflow: hidden;
 }
 
-p > code {
+p > code, li > code {
   background-color: #222;
   border: solid #444 2px;
   padding-inline: 4px;
@@ -68,6 +68,11 @@ p > code {
 input[type=text], input[type=number], textarea, select {
   border: solid #666 2px;
   background-color: #fff;
+}
+
+button {
+  border: solid #666 2px;
+  background: #aaa;
 }
 
 textarea {
