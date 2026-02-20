@@ -47,6 +47,7 @@ async fn main() -> anyhow::Result<()> {
                     }
 
                     node.data.doc = Some(data.hover);
+                    node.data.location = Some(data.location);
                     node.data.valid = Some(true);
                 } else {
                     missing_refs += 1;

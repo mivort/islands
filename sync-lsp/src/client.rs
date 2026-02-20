@@ -252,7 +252,7 @@ impl LspClient {
                 .hover(HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
                         text_document: TextDocumentIdentifier {
-                            uri: s.location.uri,
+                            uri: s.location.uri.clone(),
                         },
                         position: s.location.range.start,
                     },
@@ -265,7 +265,12 @@ impl LspClient {
                 None => continue,
             };
 
-            return Ok(Some(LspData::from_hover(hover)));
+            // TODO: convert location into relative path
+            return Ok(Some(LspData::from_hover(
+                hover,
+                s.location.uri.as_str(),
+                s.location.range.start.line,
+            )));
         }
 
         Ok(None)
@@ -296,7 +301,11 @@ impl LspClient {
             .await?;
 
         match hover {
-            Some(hover) => Ok(Some(LspData::from_hover(hover))),
+            Some(hover) => Ok(Some(LspData::from_hover(
+                hover,
+                &node_ref.path,
+                symbol.selection_range.start.line,
+            ))),
             None => Ok(Some(LspData::default())),
         }
     }
@@ -362,13 +371,15 @@ impl LanguageClient for LspState {
 #[derive(Default)]
 pub(crate) struct LspData {
     pub hover: String,
+    pub location: String,
 }
 
 impl LspData {
-    fn from_hover(hover: Hover) -> Self {
+    fn from_hover(hover: Hover, path: &str, line: u32) -> Self {
         match hover.contents {
             HoverContents::Markup(content) => Self {
                 hover: content.value,
+                location: format!("{}:{}", path, line + 1),
             },
             _ => Default::default(),
         }
