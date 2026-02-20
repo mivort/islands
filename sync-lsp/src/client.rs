@@ -150,9 +150,21 @@ impl LspClient {
     }
 
     /// Perform a workspace lookup for specific symbol.
+    /// Server response items are treated as 'missing symbols' to handle changed
+    /// file paths.
     pub async fn find_symbol(&mut self, node_ref: &NodeRef) -> anyhow::Result<Option<LspData>> {
         if node_ref.path.len() > 0 {
-            return self.find_document_symbol(&node_ref).await;
+            match self.find_document_symbol(&node_ref).await {
+                Ok(symbol) => return Ok(symbol),
+                Err(err) => {
+                    for cause in err.chain() {
+                        if let Some(_err) = cause.downcast_ref::<ResponseError>() {
+                            return Ok(None);
+                        }
+                    }
+                    return Err(err);
+                }
+            }
         }
         self.find_workspace_symbol(&node_ref).await
     }
