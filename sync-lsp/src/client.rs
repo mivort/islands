@@ -5,7 +5,8 @@ use std::process::Stdio;
 use anyhow::Context as _;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    ClientCapabilities, Hover, HoverClientCapabilities, HoverContents, HoverParams,
+    ClientCapabilities, DocumentSymbol, DocumentSymbolClientCapabilities, DocumentSymbolParams,
+    DocumentSymbolResponse, Hover, HoverClientCapabilities, HoverContents, HoverParams,
     InitializeParams, InitializedParams, MarkupKind, NumberOrString, ProgressParams,
     ProgressParamsValue, SymbolInformation, TextDocumentClientCapabilities, TextDocumentIdentifier,
     TextDocumentPositionParams, Url, WindowClientCapabilities, WorkDoneProgress, WorkspaceFolder,
@@ -37,7 +38,7 @@ impl LspClient {
     /// Spawn LSP server child process.
     pub fn new(cmd: &str) -> anyhow::Result<Self> {
         let cwd = std::env::current_dir()?;
-        let workdir: Url = format!("file://{}", cwd.display()).parse()?;
+        let workdir: Url = format!("file://{}/", cwd.display()).parse()?;
 
         let (indexed_send, indexed_recv) = oneshot::channel();
         let mut router = Router::from_language_client(LspState {
@@ -108,6 +109,10 @@ impl LspClient {
                             content_format: Some(vec![MarkupKind::Markdown]),
                             ..Default::default()
                         }),
+                        document_symbol: Some(DocumentSymbolClientCapabilities {
+                            hierarchical_document_symbol_support: Some(true),
+                            ..Default::default()
+                        }),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -145,6 +150,10 @@ impl LspClient {
 
     /// Perform a workspace lookup for specific symbol.
     pub async fn find_symbol(&mut self, node_ref: NodeRef) -> anyhow::Result<Option<LspData>> {
+        if node_ref.params.path.is_some() {
+            return self.find_document_symbol(&node_ref).await;
+        }
+
         let symbol = self
             .server
             .symbol(WorkspaceSymbolParams {
@@ -178,6 +187,34 @@ impl LspClient {
 }
 
 impl LspClient {
+    /// Query the specified document path.
+    async fn find_document_symbol(
+        &mut self,
+        node_ref: &NodeRef,
+    ) -> anyhow::Result<Option<LspData>> {
+        let uri = self
+            .workdir
+            .join(&node_ref.params.path.as_ref().context("Missing path")?)?;
+        let symbol = self
+            .server
+            .document_symbol(DocumentSymbolParams {
+                text_document: TextDocumentIdentifier { uri },
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
+            })
+            .await?;
+
+        match symbol {
+            Some(DocumentSymbolResponse::Flat(symbols)) => {
+                self.match_symbol(symbols, &node_ref).await
+            }
+            Some(DocumentSymbolResponse::Nested(symbols)) => {
+                self.match_document_symbol(symbols, &node_ref).await
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Iterate over list of found symbols and try to match the parameters.
     async fn match_symbol(
         &mut self,
@@ -191,18 +228,67 @@ impl LspClient {
             if !node_ref.params.matches_kind(s.kind) {
                 continue;
             }
-            if !node_ref.params.matches_uri(&s.location.uri) {
-                continue;
-            }
+
+            let uri = if let Some(path) = &node_ref.params.path {
+                self.workdir.join(&path)?
+            } else {
+                s.location.uri
+            };
+
+            println!("Location: {:?}", s.location.range);
 
             let hover = self
                 .server
                 .hover(HoverParams {
                     text_document_position_params: TextDocumentPositionParams {
-                        text_document: TextDocumentIdentifier {
-                            uri: s.location.uri,
-                        },
+                        text_document: TextDocumentIdentifier { uri },
                         position: s.location.range.start,
+                    },
+                    work_done_progress_params: Default::default(),
+                })
+                .await?;
+
+            println!("Hover: {hover:?}");
+
+            let hover = match hover {
+                Some(hover) => hover,
+                None => continue,
+            };
+
+            return Ok(Some(LspData::from_hover(hover)));
+        }
+
+        Ok(None)
+    }
+
+    /// Iterate over list of found symbols and try to match the parameters.
+    async fn match_document_symbol(
+        &mut self,
+        symbols: Vec<DocumentSymbol>,
+        node_ref: &NodeRef,
+    ) -> anyhow::Result<Option<LspData>> {
+        // TODO: iterate recursively
+
+        for s in symbols {
+            if s.name != node_ref.base {
+                continue;
+            }
+            if !node_ref.params.matches_kind(s.kind) {
+                continue;
+            }
+
+            let uri = if let Some(path) = &node_ref.params.path {
+                self.workdir.join(&path)?
+            } else {
+                continue;
+            };
+
+            let hover = self
+                .server
+                .hover(HoverParams {
+                    text_document_position_params: TextDocumentPositionParams {
+                        text_document: TextDocumentIdentifier { uri },
+                        position: s.selection_range.start,
                     },
                     work_done_progress_params: Default::default(),
                 })
@@ -237,7 +323,6 @@ impl LanguageClient for LspState {
     type NotifyResult = ControlFlow<async_lsp::Result<()>>;
 
     fn progress(&mut self, params: ProgressParams) -> Self::NotifyResult {
-        println!("LSP progress: {params:?}");
         if matches!(
             params.value,
             ProgressParamsValue::WorkDone(WorkDoneProgress::End(_))

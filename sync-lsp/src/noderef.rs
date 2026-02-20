@@ -1,5 +1,5 @@
 use anyhow::Context as _;
-use async_lsp::lsp_types::{SymbolKind, Url};
+use async_lsp::lsp_types::SymbolKind;
 use serde::Deserialize;
 use unwrap_or::unwrap_some_or;
 
@@ -41,12 +41,6 @@ impl NodeRefParams {
     pub fn matches_kind(&self, kind: SymbolKind) -> bool {
         let match_kind = unwrap_some_or!(&self.kind, return true);
         match_kind.to_kind() == kind
-    }
-
-    /// Check if node reference matches symbol location.
-    pub fn matches_uri(&self, uri: &Url) -> bool {
-        let path = unwrap_some_or!(&self.path, return true);
-        uri.path().ends_with(path)
     }
 }
 
