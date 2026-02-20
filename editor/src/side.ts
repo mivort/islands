@@ -77,7 +77,7 @@ export class SidePanel {
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
     this.doc = document.getElementById('side-view-doc') as HTMLDivElement;
-    this.location = new LocationView();
+    this.location = new LocationView(cy);
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');

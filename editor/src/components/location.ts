@@ -1,10 +1,12 @@
+import { Data } from "../data";
+
 /** Location view with the copy button alongside. */
 export class LocationView {
   container: HTMLElement;
   value: HTMLElement;
   copy: HTMLElement;
 
-  constructor() {
+  constructor(cy: cytoscape.Core) {
     const container = document.getElementById('side-view-location');
     const value = document.getElementById('side-view-location-value');
     const copy = document.getElementById('side-view-location-copy');
@@ -15,6 +17,13 @@ export class LocationView {
     this.value = value;
     this.copy = copy;
 
-    // TODO: subscribe to selection event
+    // TODO: subscribe to custom 'current node' event
+    cy.addListener('select unselect', () => {
+      const elements = cy.elements(':selected');
+      console.log('select' + elements.length);
+      if (elements.length === 0) return;
+
+      this.value.innerText = elements[0].data(Data.LOCATION) ?? '';
+    });
   }
 }

@@ -11,4 +11,5 @@ export enum Data {
 	VALID = 'valid',
 	DESC = 'desc',
 	DOC = 'doc',
+	LOCATION = 'location',
 }
