@@ -1,5 +1,6 @@
 import cytoscape from 'cytoscape';
 import { Data } from './data';
+import { LocationView } from './components/location';
 
 /** Side panel state. */
 export class SidePanel {
@@ -10,6 +11,7 @@ export class SidePanel {
   shape: HTMLSelectElement | null;
   size: HTMLInputElement | null;
   desc: HTMLTextAreaElement | null;
+  location: LocationView;
   doc: HTMLDivElement | null;
 
   classFade: HTMLInputElement | null;
@@ -75,6 +77,7 @@ export class SidePanel {
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
     this.doc = document.getElementById('side-view-doc') as HTMLDivElement;
+    this.location = new LocationView();
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
