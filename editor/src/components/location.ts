@@ -4,7 +4,6 @@ import { Data } from "../data";
 export class LocationView {
   container: HTMLElement;
   value: HTMLElement;
-  copy: HTMLElement;
 
   constructor(cy: cytoscape.Core) {
     const container = document.getElementById('side-view-location');
@@ -15,7 +14,6 @@ export class LocationView {
 
     this.container = container;
     this.value = value;
-    this.copy = copy;
 
     // TODO: subscribe to custom 'current node' event
     cy.addListener('select unselect', () => {
@@ -25,5 +23,9 @@ export class LocationView {
 
       this.value.innerText = elements[0].data(Data.LOCATION) ?? '';
     });
+
+    copy.addEventListener('click', () => {
+      navigator.clipboard.writeText(this.value.innerText);
+    })
   }
 }
