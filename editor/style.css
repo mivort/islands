@@ -75,6 +75,11 @@ button {
   background: #aaa;
 }
 
+button:active {
+  border-color: #777;
+  background: #bbb;
+}
+
 textarea {
   resize: vertical;
 }
