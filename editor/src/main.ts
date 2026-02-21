@@ -128,15 +128,22 @@ document.addEventListener('DOMContentLoaded', () => {
           'text-halign': 'right',
           'text-valign': 'bottom',
           'text-justification': 'left',
-          'text-margin-x': -2,
-          'text-margin-y': -2,
+          'text-margin-x': 4,
+          'text-margin-y': 4,
           'text-outline-width': 0,
           'text-events': 'yes',
           'shape': 'rectangle',
           'background-opacity': 0,
           'border-opacity': 0,
+          'border-width': 0,
           'width': 4,
           'height': 4,
+        },
+      },
+      {
+        selector: `node[${Data.LABEL}].comment:selected`,
+        css: {
+          'text-background-color': '#0169d9',
         },
       },
       {
@@ -261,6 +268,23 @@ document.addEventListener('DOMContentLoaded', () => {
               x: event.position.x,
               y: event.position.y,
             },
+          });
+        },
+      },
+      {
+        id: 'add-comment',
+        content: 'Add comment',
+        coreAsWell: true,
+        selector: '',
+        onClickFunction: (event) => {
+          undo.do('add', {
+            group: 'nodes',
+            data: { label: '---' },
+            position: {
+              x: event.position.x,
+              y: event.position.y,
+            },
+            classes: 'comment',
           });
         },
       },
