@@ -19,6 +19,7 @@ export class SidePanel {
 
   classFade: HTMLInputElement | null;
   classDraft: HTMLInputElement | null;
+  classComment: HTMLInputElement | null;
 
   /** Current file name for saving. */
   filename = 'islands.json';
@@ -71,6 +72,7 @@ export class SidePanel {
     if (this.desc) this.desc.value = node.data(Data.DESC) ?? '';
     if (this.classFade) this.classFade.checked = node.hasClass('fade');
     if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
+    if (this.classComment) this.classComment.checked = node.hasClass('comment');
   }
 
   /** Hide display of node data. */
@@ -80,6 +82,7 @@ export class SidePanel {
     if (this.desc) this.desc.value = '';
     if (this.classFade) this.classFade.checked = false;
     if (this.classDraft) this.classDraft.checked = false;
+    if (this.classComment) this.classComment.checked = false;
   }
 
   constructor(cy: cytoscape.Core) {
@@ -91,13 +94,20 @@ export class SidePanel {
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
-    new LocationView(cy);
+    new LocationView();
     new DocView();
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
+      const value = (event.target as HTMLInputElement).value;
+      if (value) {
+        for (const node of nodes) {
+          node.data(Data.NAME, value);
+        }
+        return;
+      }
       for (const node of nodes) {
-        node.data(Data.NAME, (event.target as any).value);
+        node.removeData(Data.NAME);
       }
     });
     this.ref?.addEventListener('change', (event) => {
@@ -179,9 +189,14 @@ export class SidePanel {
       toggleClass('fade', (target as HTMLInputElement).checked);
     });
 
-    this.classDraft = document.getElementById('side-edit-class-draft') as HTMLInputElement;
+    this.classDraft = document.getElementById('side-edit-class-draft') as HTMLInputElement | null;
     this.classDraft?.addEventListener('change', ({ target }) => {
       toggleClass('draft', (target as HTMLInputElement).checked);
+    });
+
+    this.classComment = document.getElementById('side-edit-class-comment') as HTMLInputElement | null;
+    this.classComment?.addEventListener('change', ({ target }) => {
+      toggleClass('comment', (target as HTMLInputElement).checked);
     });
 
     document.getElementById('side-export-button')?.addEventListener('click', () => {

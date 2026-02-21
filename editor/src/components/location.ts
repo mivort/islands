@@ -1,11 +1,11 @@
-import { Data } from "../data";
+import { Data, ElementChangeEvent, Events } from "../data";
 
 /** Location view with the copy button alongside. */
 export class LocationView {
   container: HTMLElement;
   value: HTMLElement;
 
-  constructor(cy: cytoscape.Core) {
+  constructor() {
     const container = document.getElementById('side-view-location');
     const value = document.getElementById('side-view-location-value');
     const copy = document.getElementById('side-view-location-copy');
@@ -15,13 +15,9 @@ export class LocationView {
     this.container = container;
     this.value = value;
 
-    // TODO: subscribe to custom 'current node' event
-    cy.addListener('select unselect', () => {
-      const elements = cy.elements(':selected');
-      console.log('select' + elements.length);
-      if (elements.length === 0) return;
-
-      this.value.innerText = elements[0].data(Data.LOCATION) ?? '';
+    window.addEventListener(Events.GRAPH_ELEMENT_CHANGE, (event) => {
+      const element = (event as CustomEvent<ElementChangeEvent>).detail.element;
+      this.value.innerText = element?.data(Data.LOCATION) ?? '';
     });
 
     copy.addEventListener('click', () => {
