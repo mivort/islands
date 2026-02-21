@@ -173,6 +173,37 @@ impl LspClient {
         self.find_workspace_symbol(&node_ref).await
     }
 
+    /// Use provided file path, line and char number to produce LSP reference (`lsp://...`).
+    pub async fn make_ref(
+        &mut self,
+        path: &str,
+        line: u32,
+        char: u32,
+    ) -> anyhow::Result<Option<String>> {
+        let uri = self.workdir.join(path)?;
+        let symbol = self
+            .server
+            .document_symbol(DocumentSymbolParams {
+                text_document: TextDocumentIdentifier { uri },
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
+            })
+            .await?;
+
+        match symbol {
+            Some(DocumentSymbolResponse::Nested(symbols)) => {
+                println!("Top level symbols in the document: {}", symbols.len());
+                let stack = self.find_nested_symbol_in_position(&symbols, line, char);
+                if stack.is_empty() {
+                    return Ok(None);
+                }
+                return Ok(Some(convert_stack(path, stack)));
+            }
+            Some(DocumentSymbolResponse::Flat(_)) => todo!(),
+            None => todo!(),
+        }
+    }
+
     /// Wait for LSP server child process completion.
     pub async fn exit(&mut self) -> anyhow::Result<()> {
         self.server.shutdown(()).await?;
@@ -352,6 +383,56 @@ impl LspClient {
 
         None
     }
+
+    /// Iterate recursevly over nested document symbols to find one under the cursor.
+    fn find_nested_symbol_in_position<'a>(
+        &self,
+        symbols: &'a [DocumentSymbol],
+        line: u32,
+        char: u32,
+    ) -> Vec<&'a DocumentSymbol> {
+        let mut stack = Vec::new();
+
+        fn lookup<'al>(
+            list: &'al [DocumentSymbol],
+            stack: &mut Vec<&'al DocumentSymbol>,
+            line: u32,
+            char: u32,
+        ) -> bool {
+            for symbol in list {
+                let range = &symbol.selection_range;
+
+                println!(
+                    "Matching symbol: {}, range: {}:{}..{}:{}",
+                    symbol.name,
+                    range.start.line,
+                    range.start.character,
+                    range.end.line,
+                    range.end.character,
+                );
+
+                if range.start.line <= line
+                    && range.start.character <= char
+                    && range.end.line >= line
+                    && range.end.character >= char
+                {
+                    stack.push(symbol);
+                    return true;
+                }
+
+                let symbols = unwrap_some_or!(&symbol.children, { continue });
+                stack.push(symbol);
+
+                if !lookup(symbols, stack, line, char) {
+                    stack.pop();
+                }
+            }
+            false
+        }
+
+        lookup(symbols, &mut stack, line, char);
+        stack
+    }
 }
 
 /// Remove extra symbols from name and replace spaces and special chars with '-'.
@@ -373,11 +454,24 @@ fn convert_name(name: &str) -> String {
     out
 }
 
+/// Produce LSP reference from nested stack.
+fn convert_stack(path: &str, stack: Vec<&DocumentSymbol>) -> String {
+    let mut base = format!("lsp://{path}#");
+    let mut iter = stack.iter().peekable();
+    while let Some(symbol) = iter.next() {
+        base.push_str(&convert_name(&symbol.name));
+        if iter.peek().is_some() {
+            base.push('/');
+        }
+    }
+    base
+}
+
 #[test]
 fn name_conversion() {
     assert_eq!(
         convert_name("impl MyTrait   for   MyType<R>"),
-        "impl-MyTrait-for-MyType-R-"
+        "impl+MyTrait+for+MyType+R+"
     );
 }
 

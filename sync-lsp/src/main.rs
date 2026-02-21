@@ -6,15 +6,32 @@ mod noderef;
 use std::fs;
 
 use anyhow::Context as _;
+use args::{Args, MakeRefArgs, Subcommand, VerifyArgs};
 use clap::Parser as _;
 use noderef::{NodeRef, RefType};
 use unwrap_or::{unwrap_ok_or, unwrap_some_or};
+
+#[derive(Default)]
+struct Stats {
+    checked_refs: usize,
+    missing_refs: usize,
+    updated_docs: usize,
+    updated_locs: usize,
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     let args = args::Args::parse();
 
-    let mut graph = graph::Graph::from_json(&args.target)?;
+    match &args.command {
+        Subcommand::Verify(verify_args) => verify(&args, verify_args).await,
+        Subcommand::MakeRef(make_ref_args) => make_ref(&args, make_ref_args).await,
+    }
+}
+
+/// Iterate over graph nodes and check the referenced entries.
+async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
+    let mut graph = graph::Graph::from_json(&verify.target)?;
     println!(
         "Graph loaded, nodes: {}, edges: {}",
         graph.nodes.len(),
@@ -26,14 +43,11 @@ async fn main() -> anyhow::Result<()> {
     client.wait_index().await?;
     println!("Indexing complete");
 
-    let mut checked_refs = 0usize;
-    let mut missing_refs = 0usize;
-    let mut updated_docs = 0usize;
-    let mut updated_locs = 0usize;
+    let mut stats = Stats::default();
 
     for node in &mut graph.nodes {
         let ref_uri = unwrap_some_or!(&node.data.r#ref, { continue });
-        checked_refs += 1;
+        stats.checked_refs += 1;
 
         let node_ref = unwrap_ok_or!(NodeRef::parse_ref(ref_uri), _, {
             eprintln!("Unable to parse reference: {}", ref_uri);
@@ -44,23 +58,23 @@ async fn main() -> anyhow::Result<()> {
             RefType::Lsp => {
                 let data = client.find_symbol(&node_ref).await?;
                 if let Some(data) = data {
-                    if !args.update {
+                    if !verify.update {
                         continue;
                     }
 
                     if node.data.doc.as_ref() != Some(&data.hover) {
                         node.data.doc = Some(data.hover);
-                        updated_docs += 1;
+                        stats.updated_docs += 1;
                     }
                     if node.data.location.as_ref() != Some(&data.location) {
                         node.data.location = Some(data.location);
-                        updated_locs += 1;
+                        stats.updated_locs += 1;
                     }
                     node.data.valid = Some(true);
                 } else {
-                    missing_refs += 1;
+                    stats.missing_refs += 1;
                     eprintln!("Reference not found: {}", ref_uri);
-                    if !args.update {
+                    if !verify.update {
                         continue;
                     }
 
@@ -69,40 +83,85 @@ async fn main() -> anyhow::Result<()> {
             }
             RefType::File => {
                 eprintln!("File refs are not supported yet: {}", ref_uri);
-                missing_refs += 1;
+                stats.missing_refs += 1;
             }
             RefType::Unknown => {
                 eprintln!("Unknown reference type: {}", ref_uri);
-                missing_refs += 1;
+                stats.missing_refs += 1;
             }
         }
     }
 
     client.exit().await?;
 
-    println!("References validated: {checked_refs}");
-    if updated_docs > 0 {
-        println!("Docs updated: {updated_docs}");
+    println!("References validated: {}", stats.checked_refs);
+    if stats.updated_docs > 0 {
+        println!("Docs updated: {}", stats.updated_docs);
     }
-    if updated_locs > 0 {
-        println!("Locations updated: {updated_locs}");
+    if stats.updated_locs > 0 {
+        println!("Locations updated: {}", stats.updated_locs);
     }
 
-    if missing_refs > 0 {
-        eprintln!("Found {missing_refs} missing references");
+    if stats.missing_refs > 0 {
+        eprintln!("Found {} missing references", stats.missing_refs);
 
-        if !args.update {
+        if !verify.update {
             std::process::exit(1);
         }
     } else {
         println!("No missing references found");
     }
 
-    if args.update {
+    if verify.update {
         let output =
             serde_json::to_string_pretty(&graph).context("Unable to serialize graph data")?;
-        fs::write(&args.target, &output)?;
+        fs::write(&verify.target, &output)?;
     }
 
     Ok(())
+}
+
+/// Produce a reference to the given place in code.
+async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> anyhow::Result<()> {
+    let mut client = client::LspClient::new(&args.lsp, args.debug)?;
+    client.initialize().await?;
+    client.wait_index().await?;
+    println!("Indexing complete");
+
+    if let Some((path, line, char)) = extract_path(&make_ref.target) {
+        match client.make_ref(path, line, char).await {
+            Ok(Some(reference)) => println!("Reference: {reference}"),
+            _ => eprintln!("Location not resolved: {}", make_ref.target),
+        }
+    } else {
+        eprintln!("Unable to extract path, line and character numbers from input");
+    }
+
+    client.exit().await?;
+
+    Ok(())
+}
+
+/// Extract line number and character number from the input parameter.
+/// Numbers are coverted to be 0-based to be compatible with LSP output.
+fn extract_path(full_path: &str) -> Option<(&str, u32, u32)> {
+    let (remainder, char_no) = full_path.rsplit_once(':')?;
+    let (path, line_no) = remainder.rsplit_once(':')?;
+
+    let line_no: u32 = line_no.parse().ok()?;
+    let char_no: u32 = char_no.parse().ok()?;
+    Some((path, line_no.saturating_sub(1), char_no.saturating_sub(1)))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn extract_path() {
+        assert_eq!(
+            super::extract_path("src/main.rs:32:5"),
+            Some(("src/main.rs", 31, 4))
+        );
+        assert_eq!(super::extract_path("src/main.rs:32"), None);
+        assert_eq!(super::extract_path("src/main.rs:-32:-5"), None);
+    }
 }
