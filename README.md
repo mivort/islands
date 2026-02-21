@@ -1,4 +1,6 @@
-# Islands
+<img src="docs/assets/logo.png" alt="Islands logo" />
+
+----
 
 Network graph drawing tool with support for LSP-based node relevance
 validation.
@@ -8,4 +10,4 @@ The repo consists of the several modules:
 * `/sync-lsp`: sync utility which communicate with LSP server to resolve
   `lsp://` references in the graph.
 
-* [cytoscape]: https://js.cytoscape.org/
+[cytoscape]: https://js.cytoscape.org/
