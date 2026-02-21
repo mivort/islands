@@ -84,6 +84,14 @@ textarea {
   resize: vertical;
 }
 
+textarea#side-edit-name {
+  height: 48px;
+}
+
+textarea#side-edit-desc {
+  height: 64px;
+}
+
 .pad {
   padding: 4px;
 }

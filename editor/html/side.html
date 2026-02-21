@@ -1,14 +1,19 @@
 <aside class="flex column">
   <div class="flex column pad">
-    <label for="side-edit-name">Name</label>
+    <label for="side-edit-name">Label</label>
     <textarea id="side-edit-name"></textarea>
     <label for="side-edit-ref">Reference</label>
     <input type="text" id="side-edit-ref" />
-    <label for="side-edit-desc">Description</label>
+    <label for="side-edit-desc">Note</label>
     <textarea id="side-edit-desc"></textarea>
   </div>
   <div id="side-view-doc" class="pad expand"></div>
   <div class="flex column pad gap">
+    <div class="flex row gap" id="side-view-location">
+      <div class="expand">Location:</div>
+      <div id="side-view-location-value" class="nowrap ellipsis"></div>
+      <button id="side-view-location-copy">Copy</button>
+    </div>
     <div class="flex row gap">
       <label for="side-edit-shape">Shape</label>
       <select id="side-edit-shape" class="expand">
@@ -61,11 +66,6 @@
     <div class="flex row gap">
       <div class="expand">ID:</div>
       <div id="side-edit-id" class="nowrap ellipsis"></div>
-    </div>
-    <div class="flex row gap" id="side-view-location">
-      <div class="expand">Location:</div>
-      <div id="side-view-location-value" class="nowrap ellipsis"></div>
-      <button id="side-view-location-copy">Copy</button>
     </div>
   </div>
   <input class="pad" id="side-file-picker" type="file" accept=".json,.csv" multiple />
