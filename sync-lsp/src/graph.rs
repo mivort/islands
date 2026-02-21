@@ -48,9 +48,9 @@ pub(crate) struct Data {
     pub parent: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub label: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub desc: Option<String>,
+    pub note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#ref: Option<String>,
 

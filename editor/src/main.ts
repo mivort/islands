@@ -26,9 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: `node[${Data.NAME}]`,
+        selector: `node[${Data.LABEL}]`,
         css: {
-          'label': `data(${Data.NAME})`,
+          'label': `data(${Data.LABEL})`,
           'font-family': 'monospace',
           'text-wrap': 'wrap',
           'text-margin-y': -2,
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: `node[${Data.NAME}].comment`,
+        selector: `node[${Data.LABEL}].comment`,
         css: {
           'text-background-color': '#bbb',
           'text-background-shape': 'roundrectangle',

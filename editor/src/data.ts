@@ -1,15 +1,16 @@
 /** Available data fields. */
 export enum Data {
   /** Text label drawn over the node. */
-  NAME = 'name',
+  LABEL = 'label',
   /** Selected node shape. */
   SHAPE = 'shape',
   /** Node visible size. */
   SIZE = 'size',
+  /** Note which is availble upon selection. */
+  NOTE = 'note',
 
   REF = 'ref',
   VALID = 'valid',
-  DESC = 'desc',
   DOC = 'doc',
   LOCATION = 'location',
 }

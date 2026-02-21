@@ -65,11 +65,11 @@ export class SidePanel {
 
   /** Show specified node's attached data. */
   showElement(node: cytoscape.NodeSingular) {
-    if (this.name) this.name.value = node.data(Data.NAME) ?? '';
+    if (this.name) this.name.value = node.data(Data.LABEL) ?? '';
     if (this.ref) this.ref.value = node.data(Data.REF) ?? '';
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
-    if (this.desc) this.desc.value = node.data(Data.DESC) ?? '';
+    if (this.desc) this.desc.value = node.data(Data.NOTE) ?? '';
     if (this.classFade) this.classFade.checked = node.hasClass('fade');
     if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
     if (this.classComment) this.classComment.checked = node.hasClass('comment');
@@ -102,12 +102,12 @@ export class SidePanel {
       const value = (event.target as HTMLInputElement).value;
       if (value) {
         for (const node of nodes) {
-          node.data(Data.NAME, value);
+          node.data(Data.LABEL, value);
         }
         return;
       }
       for (const node of nodes) {
-        node.removeData(Data.NAME);
+        node.removeData(Data.LABEL);
       }
     });
     this.ref?.addEventListener('change', (event) => {
@@ -151,8 +151,9 @@ export class SidePanel {
     });
     this.desc?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
+      const value = (event.target as HTMLInputElement).value;
       for (const node of nodes) {
-        node.data(Data.DESC, (event.target as any).value);
+        node.data(Data.NOTE, value);
       }
     });
 
