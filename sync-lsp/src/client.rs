@@ -54,7 +54,11 @@ impl LspClient {
             .current_dir(&cwd)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
+            .stderr(if debug {
+                Stdio::inherit()
+            } else {
+                Stdio::null()
+            })
             .kill_on_drop(true)
             .spawn()
             .context("Failed run rust-analyzer")?;

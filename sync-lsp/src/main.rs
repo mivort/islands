@@ -110,7 +110,7 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
             std::process::exit(1);
         }
     } else {
-        println!("No missing references found");
+        println!("All references were resolved");
     }
 
     if verify.update {
