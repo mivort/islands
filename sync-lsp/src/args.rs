@@ -35,5 +35,6 @@ pub(crate) struct VerifyArgs {
 #[derive(Parser)]
 pub(crate) struct MakeRefArgs {
     /// Target position in code to create reference to.
-    pub target: Box<str>,
+    /// Run in interactive mode if it's not specified.
+    pub target: Option<Box<str>>,
 }

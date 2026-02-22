@@ -3,7 +3,8 @@ mod client;
 mod graph;
 mod noderef;
 
-use std::fs;
+use std::io::BufRead as _;
+use std::{fs, io};
 
 use anyhow::Context as _;
 use args::{Args, MakeRefArgs, Subcommand, VerifyArgs};
@@ -128,13 +129,32 @@ async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> anyhow::Result<()> {
     client.wait_index().await?;
     println!("Indexing complete");
 
-    if let Some((path, line, char)) = extract_path(&make_ref.target) {
-        match client.make_ref(path, line, char).await {
-            Ok(Some(reference)) => println!("Reference: {reference}"),
-            _ => eprintln!("Location not resolved: {}", make_ref.target),
+    if let Some(target) = &make_ref.target {
+        if let Some((path, line, char)) = extract_path(target) {
+            match client.make_ref(path, line, char).await {
+                Ok(Some(reference)) => println!("Reference: {reference}"),
+                _ => eprintln!("Location not resolved: {}", target),
+            }
+        } else {
+            eprintln!("Unable to extract path, line and character numbers from input");
         }
     } else {
-        eprintln!("Unable to extract path, line and character numbers from input");
+        println!("Interactive mode started, enter 'path/to/file:line:char' to resolve into reference");
+        let stdin = io::stdin();
+        for input in stdin.lock().lines() {
+            let input = input?;
+            if input.is_empty() {
+                break;
+            }
+            let (path, line, char) = unwrap_some_or!(extract_path(&input), {
+                println!("Unable to extract path");
+                continue;
+            });
+            match client.make_ref(path, line, char).await {
+                Ok(Some(reference)) => println!("Reference: {reference}"),
+                _ => eprintln!("Location not resolved: {}", &input),
+            }
+        }
     }
 
     client.exit().await?;
