@@ -18,6 +18,7 @@ use async_lsp::tracing::TracingLayer;
 use async_lsp::{LanguageClient, LanguageServer, ResponseError, ServerSocket};
 use async_process::Child;
 use futures::channel::oneshot;
+use log::{debug, error, info};
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use unwrap_or::unwrap_some_or;
@@ -85,7 +86,7 @@ impl LspClient {
                 .run_buffered(stdout, stdin)
                 .await
                 .unwrap_or_else(|_| {
-                    eprintln!("Unable to fetch data from language server process");
+                    error!("Unable to fetch data from language server process");
                 });
         });
 
@@ -140,7 +141,7 @@ impl LspClient {
             ("unknown", "(unknown)")
         };
 
-        println!("Initialized: {name} {version}");
+        info!("Initialized: {name} {version}");
         self.server.initialized(InitializedParams {}).unwrap();
 
         Ok(())
@@ -148,7 +149,7 @@ impl LspClient {
 
     /// Wait for LSP server to report index readyness.
     pub async fn wait_index(&mut self) -> anyhow::Result<()> {
-        println!("Waiting for index to be loaded...");
+        info!("Waiting for index to be loaded...");
 
         let recv = self
             .indexed_recv
@@ -184,6 +185,8 @@ impl LspClient {
         line: u32,
         char: u32,
     ) -> anyhow::Result<Option<String>> {
+        debug!("Querying symbols for {}", path);
+
         let uri = self.workdir.join(path)?;
         let symbol = self
             .server
@@ -196,7 +199,7 @@ impl LspClient {
 
         match symbol {
             Some(DocumentSymbolResponse::Nested(symbols)) => {
-                println!("Top level symbols in the document: {}", symbols.len());
+                debug!("Top level symbols in the document: {}", symbols.len());
                 let stack = self.find_nested_symbol_in_position(&symbols, line, char);
                 if stack.is_empty() {
                     return Ok(None);
@@ -252,7 +255,7 @@ impl LspClient {
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
         if self.debug {
-            println!("Query document symbols: {}", node_ref.path);
+            info!("Query document symbols: {}", node_ref.path);
         }
         let uri = self.workdir.join(&node_ref.path)?;
         let symbol = self
@@ -364,12 +367,10 @@ impl LspClient {
         for symbol in symbols {
             let name = convert_name(&symbol.name);
 
-            if self.debug {
-                println!(
-                    "Matching symbol '{name}' ({:?}) with '{}' + '{}'",
-                    symbol.kind, current, remainder
-                );
-            }
+            debug!(
+                "Matching symbol '{name}' ({:?}) with '{}' + '{}'",
+                symbol.kind, current, remainder
+            );
 
             if name != current {
                 continue;
@@ -406,7 +407,7 @@ impl LspClient {
             for symbol in list {
                 let range = &symbol.selection_range;
 
-                println!(
+                debug!(
                     "Matching symbol: {}, range: {}:{}..{}:{}",
                     symbol.name,
                     range.start.line,

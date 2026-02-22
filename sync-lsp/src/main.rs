@@ -6,9 +6,10 @@ mod noderef;
 use std::io::Write as _;
 use std::{fs, io};
 
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use args::{Args, MakeRefArgs, Subcommand, VerifyArgs};
 use clap::Parser as _;
+use log::{error, info};
 use noderef::{NodeRef, RefType};
 use unwrap_or::{unwrap_ok_or, unwrap_some_or};
 
@@ -21,8 +22,9 @@ struct Stats {
 }
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     let args = args::Args::parse();
+    setup_logging(args.debug)?;
 
     match &args.command {
         Subcommand::Verify(verify_args) => verify(&args, verify_args).await,
@@ -30,10 +32,32 @@ async fn main() -> anyhow::Result<()> {
     }
 }
 
+/// Enable fern to produce the logs.
+pub fn setup_logging(debug: bool) -> Result<(), log::SetLoggerError> {
+    use log::{Level, LevelFilter};
+
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            match record.level() {
+                Level::Debug | Level::Trace => out.finish(format_args!("+ {}", message)),
+                Level::Warn => out.finish(format_args!("! {}", message)),
+                Level::Error => out.finish(format_args!("!! {}", message)),
+                Level::Info => out.finish(format_args!("* {}", message)),
+            }
+        })
+        .level(if debug {
+            LevelFilter::Debug
+        } else {
+            LevelFilter::Info
+        })
+        .chain(io::stdout())
+        .apply()
+}
+
 /// Iterate over graph nodes and check the referenced entries.
-async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
+async fn verify(args: &Args, verify: &VerifyArgs) -> Result<()> {
     let mut graph = graph::Graph::from_json(&verify.target)?;
-    println!(
+    info!(
         "Graph loaded, nodes: {}, edges: {}",
         graph.nodes.len(),
         graph.edges.len()
@@ -42,7 +66,7 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
     let mut client = client::LspClient::new(&args.lsp, args.debug)?;
     client.initialize().await?;
     client.wait_index().await?;
-    println!("Indexing complete");
+    info!("Indexing complete");
 
     let mut stats = Stats::default();
 
@@ -51,7 +75,7 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
         stats.checked_refs += 1;
 
         let node_ref = unwrap_ok_or!(NodeRef::parse_ref(ref_uri), _, {
-            eprintln!("Unable to parse reference: {}", ref_uri);
+            error!("Unable to parse reference: {}", ref_uri);
             continue;
         });
 
@@ -74,7 +98,7 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
                     node.data.valid = Some(true);
                 } else {
                     stats.missing_refs += 1;
-                    eprintln!("Reference not found: {}", ref_uri);
+                    error!("Reference not found: {}", ref_uri);
                     if !verify.update {
                         continue;
                     }
@@ -83,11 +107,11 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
                 }
             }
             RefType::File => {
-                eprintln!("File refs are not supported yet: {}", ref_uri);
+                error!("File refs are not supported yet: {}", ref_uri);
                 stats.missing_refs += 1;
             }
             RefType::Unknown => {
-                eprintln!("Unknown reference type: {}", ref_uri);
+                error!("Unknown reference type: {}", ref_uri);
                 stats.missing_refs += 1;
             }
         }
@@ -95,22 +119,22 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
 
     client.exit().await?;
 
-    println!("References validated: {}", stats.checked_refs);
+    info!("References validated: {}", stats.checked_refs);
     if stats.updated_docs > 0 {
-        println!("Docs updated: {}", stats.updated_docs);
+        info!("Docs updated: {}", stats.updated_docs);
     }
     if stats.updated_locs > 0 {
-        println!("Locations updated: {}", stats.updated_locs);
+        info!("Locations updated: {}", stats.updated_locs);
     }
 
     if stats.missing_refs > 0 {
-        eprintln!("Found {} missing references", stats.missing_refs);
+        error!("Found {} unresolved references", stats.missing_refs);
 
         if !verify.update {
             std::process::exit(1);
         }
     } else {
-        println!("All references were resolved");
+        info!("All references resolved");
     }
 
     if verify.update {
@@ -123,25 +147,23 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> anyhow::Result<()> {
 }
 
 /// Produce a reference to the given place in code.
-async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> anyhow::Result<()> {
+async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> Result<()> {
     let mut client = client::LspClient::new(&args.lsp, args.debug)?;
     client.initialize().await?;
     client.wait_index().await?;
-    println!("Indexing complete");
+    info!("Indexing complete");
 
     if let Some(target) = &make_ref.target {
         if let Some((path, line, char)) = extract_path(target) {
             match client.make_ref(path, line, char).await {
-                Ok(Some(reference)) => println!("Reference: {reference}"),
-                _ => eprintln!("Location not resolved: {}", target),
+                Ok(Some(reference)) => info!("Reference: {reference}"),
+                _ => error!("Location not resolved: {}", target),
             }
         } else {
-            eprintln!("Unable to extract path, line and character numbers from input");
+            error!("Unable to extract path, line and character numbers from input");
         }
     } else {
-        println!(
-            "Interactive mode started, enter 'path/to/file:line:char' to resolve into reference"
-        );
+        info!("Interactive mode started, enter 'path/to/file:line:char' to resolve into reference");
         let mut input = String::new();
 
         loop {
@@ -153,12 +175,12 @@ async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> anyhow::Result<()> {
             };
 
             let (path, line, char) = unwrap_some_or!(extract_path(&input.trim()), {
-                println!("Unable to extract path");
+                error!("Unable to extract path");
                 continue;
             });
             match client.make_ref(path, line, char).await {
-                Ok(Some(reference)) => println!("Reference: {reference}"),
-                _ => eprintln!("Location not resolved: {}", &input),
+                Ok(Some(reference)) => info!("Reference: {reference}"),
+                _ => error!("Location not resolved: {}", &input),
             }
         }
     }
