@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         css: {
           'label': `data(${Data.LABEL})`,
           'font-family': 'monospace',
+          'font-size': 16,
           'text-wrap': 'wrap',
           'text-margin-y': -2,
           'text-outline-width': 2,
@@ -138,6 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
           'border-width': 0,
           'width': 4,
           'height': 4,
+        },
+      },
+      {
+        selector: `node[${Data.LABEL}][${Data.SIZE}].comment`,
+        css: {
+          'font-size': `mapData(${Data.SIZE}, 25, 100, 16, 64)`,
         },
       },
       {
