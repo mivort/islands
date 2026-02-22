@@ -3,7 +3,7 @@ mod client;
 mod graph;
 mod noderef;
 
-use std::io::BufRead as _;
+use std::io::Write as _;
 use std::{fs, io};
 
 use anyhow::Context as _;
@@ -139,14 +139,20 @@ async fn make_ref(args: &Args, make_ref: &MakeRefArgs) -> anyhow::Result<()> {
             eprintln!("Unable to extract path, line and character numbers from input");
         }
     } else {
-        println!("Interactive mode started, enter 'path/to/file:line:char' to resolve into reference");
-        let stdin = io::stdin();
-        for input in stdin.lock().lines() {
-            let input = input?;
-            if input.is_empty() {
+        println!(
+            "Interactive mode started, enter 'path/to/file:line:char' to resolve into reference"
+        );
+        let mut input = String::new();
+
+        loop {
+            input.clear();
+            print!("> ");
+            io::stdout().flush()?;
+            if io::stdin().read_line(&mut input)? == 0 {
                 break;
-            }
-            let (path, line, char) = unwrap_some_or!(extract_path(&input), {
+            };
+
+            let (path, line, char) = unwrap_some_or!(extract_path(&input.trim()), {
                 println!("Unable to extract path");
                 continue;
             });
