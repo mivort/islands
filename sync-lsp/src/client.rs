@@ -31,9 +31,6 @@ pub(crate) struct LspClient {
     server: ServerSocket,
     indexed_recv: Option<oneshot::Receiver<()>>,
     join: Option<JoinHandle<()>>,
-
-    // TODO: introduce a logging facility
-    debug: bool,
 }
 
 /// List of known indexing tokens.
@@ -96,7 +93,6 @@ impl LspClient {
             server,
             join: Some(mainloop_handle),
             indexed_recv: Some(indexed_recv),
-            debug,
         })
     }
 
@@ -267,11 +263,17 @@ impl LspClient {
 
         match symbol {
             Some(DocumentSymbolResponse::Flat(symbols)) => {
-                debug!("Document contains {} symbols, flat structure", symbols.len());
+                debug!(
+                    "Document contains {} symbols, flat structure",
+                    symbols.len()
+                );
                 self.match_flat_symbol(symbols, &node_ref).await
             }
             Some(DocumentSymbolResponse::Nested(symbols)) => {
-                debug!("Document contains {} top level symbols, nested", symbols.len());
+                debug!(
+                    "Document contains {} top level symbols, nested",
+                    symbols.len()
+                );
                 self.match_nested_symbol(symbols, &node_ref).await
             }
             _ => Ok(None),

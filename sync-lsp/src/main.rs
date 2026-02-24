@@ -37,13 +37,11 @@ pub fn setup_logging(debug: bool) -> Result<(), log::SetLoggerError> {
     use log::{Level, LevelFilter};
 
     fern::Dispatch::new()
-        .format(move |out, message, record| {
-            match record.level() {
-                Level::Debug | Level::Trace => out.finish(format_args!("+ {}", message)),
-                Level::Warn => out.finish(format_args!("! {}", message)),
-                Level::Error => out.finish(format_args!("!! {}", message)),
-                Level::Info => out.finish(format_args!("* {}", message)),
-            }
+        .format(move |out, message, record| match record.level() {
+            Level::Debug | Level::Trace => out.finish(format_args!("+ {}", message)),
+            Level::Warn => out.finish(format_args!("! {}", message)),
+            Level::Error => out.finish(format_args!("!! {}", message)),
+            Level::Info => out.finish(format_args!("* {}", message)),
         })
         .level(if debug {
             LevelFilter::Debug
@@ -107,8 +105,15 @@ async fn verify(args: &Args, verify: &VerifyArgs) -> Result<()> {
                 }
             }
             RefType::File => {
-                error!("File refs are not supported yet: {}", ref_uri);
-                stats.missing_refs += 1;
+                let exists = fs::metadata(node_ref.path).is_ok();
+                if !exists {
+                    error!("File reference not found: {}", ref_uri);
+                    stats.missing_refs += 1;
+                }
+
+                if verify.update {
+                    node.data.valid = Some(exists);
+                }
             }
             RefType::Unknown => {
                 error!("Unknown reference type: {}", ref_uri);
