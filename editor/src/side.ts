@@ -112,7 +112,7 @@ export class SidePanel {
     });
     this.ref?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
-      const value = (event.target as HTMLInputElement).value;
+      const value = (event.target as HTMLInputElement).value.replace(/ /g, '');
       if (value) {
         for (const node of nodes) {
           node.data(Data.REF, value);
