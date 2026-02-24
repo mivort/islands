@@ -254,9 +254,7 @@ impl LspClient {
         &mut self,
         node_ref: &NodeRef,
     ) -> anyhow::Result<Option<LspData>> {
-        if self.debug {
-            info!("Query document symbols: {}", node_ref.path);
-        }
+        debug!("Query document symbols: {}", node_ref.path);
         let uri = self.workdir.join(&node_ref.path)?;
         let symbol = self
             .server
@@ -269,9 +267,11 @@ impl LspClient {
 
         match symbol {
             Some(DocumentSymbolResponse::Flat(symbols)) => {
+                debug!("Document contains {} symbols, flat structure", symbols.len());
                 self.match_flat_symbol(symbols, &node_ref).await
             }
             Some(DocumentSymbolResponse::Nested(symbols)) => {
+                debug!("Document contains {} top level symbols, nested", symbols.len());
                 self.match_nested_symbol(symbols, &node_ref).await
             }
             _ => Ok(None),
