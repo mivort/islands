@@ -47,6 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
+        selector: `node[${Data.REF}][^${Data.VALID}]`,
+        css: {
+          'outline-color': '#ffec99',
+          'outline-opacity': 1,
+        },
+      },
+      {
         selector: `node[${Data.VALID}][!${Data.VALID}]`,
         css: {
           'outline-color': '#900',
