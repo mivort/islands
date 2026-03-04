@@ -4,12 +4,12 @@ import { classesEdit } from './components/classes';
 import { docView } from './components/docview';
 import { labelEdit } from './components/label';
 import { locationView } from './components/location';
+import { refEdit } from './components/ref';
 
 /** Side panel state. */
 export class SidePanel {
   cy: cytoscape.Core;
   id: HTMLElement | null;
-  ref: HTMLInputElement | null;
   shape: HTMLSelectElement | null;
   size: HTMLInputElement | null;
   desc: HTMLTextAreaElement | null;
@@ -61,7 +61,6 @@ export class SidePanel {
 
   /** Show specified node's attached data. */
   showElement(node: cytoscape.NodeSingular) {
-    if (this.ref) this.ref.value = node.data(Data.REF) ?? '';
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
     if (this.desc) this.desc.value = node.data(Data.NOTE) ?? '';
@@ -69,38 +68,22 @@ export class SidePanel {
 
   /** Hide display of node data. */
   hideElement() {
-    if (this.ref) this.ref.value = '';
     if (this.desc) this.desc.value = '';
   }
 
   constructor(cy: cytoscape.Core) {
     this.cy = cy;
     this.id = document.getElementById('side-edit-id');
-    this.ref = document.getElementById('side-edit-ref') as HTMLInputElement;
     this.shape = document.getElementById('side-edit-shape') as HTMLSelectElement;
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
     labelEdit(cy);
+    refEdit(cy);
     locationView();
     docView();
     classesEdit(cy);
 
-    this.ref?.addEventListener('change', (event) => {
-      const nodes = this.cy.elements(':selected');
-      const value = (event.target as HTMLInputElement).value.replace(/ /g, '');
-      if (value) {
-        for (const node of nodes) {
-          node.data(Data.REF, value);
-          node.removeData(Data.VALID);
-        }
-        return;
-      }
-      for (const node of nodes) {
-        node.removeData(Data.REF);
-        node.removeData(Data.VALID);
-      }
-    });
     this.shape?.addEventListener('change', (event) => {
       const nodes = this.cy.nodes(':selected');
       const value = (event.target as any).value;

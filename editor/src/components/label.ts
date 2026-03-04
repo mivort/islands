@@ -3,7 +3,7 @@ import { Data, ElementChangeEvent, Events } from '../data';
 
 /** Node/edge label editor. */
 export const labelEdit = (cy: cytoscape.Core) => {
-  const label = document.getElementById('side-edit-label') as HTMLTextAreaElement;
+  const label = document.getElementById('side-edit-label') as HTMLTextAreaElement | null;
 
   if (!label) return;
 

@@ -84,7 +84,7 @@ textarea {
   resize: vertical;
 }
 
-textarea:disabled {
+input[type=text]:disabled, input[type=number]:disabled, textarea:disabled {
   background-color: #999;
 }
 
