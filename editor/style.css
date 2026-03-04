@@ -84,7 +84,11 @@ textarea {
   resize: vertical;
 }
 
-textarea#side-edit-name {
+textarea:disabled {
+  background-color: #999;
+}
+
+textarea#side-edit-label {
   height: 48px;
 }
 
