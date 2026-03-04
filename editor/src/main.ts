@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setMenuItemsVisible(['unparent'], nodeSelected && isChild);
   });
 
-  cy.on('select unselect', () => side.showSelected());
+  cy.on('select unselect remove', () => side.showSelected());
 
   /** Create edges starting at selected nodes. */
   const linkWithSelected = (target: string, reverse?: boolean) => {
