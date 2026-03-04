@@ -1,32 +1,25 @@
 import { Data, ElementChangeEvent, Events } from "../data";
 
 /** Location view with the copy button alongside. */
-export class LocationView {
-  container: HTMLElement;
-  value: HTMLElement;
-  containerDisplay: string;
+export const locationView = () => {
+  const container = document.getElementById('side-view-location');
+  const value = document.getElementById('side-view-location-value');
+  const copy = document.getElementById('side-view-location-copy');
 
-  constructor() {
-    const container = document.getElementById('side-view-location');
-    const value = document.getElementById('side-view-location-value');
-    const copy = document.getElementById('side-view-location-copy');
+  if (!value || !container || !copy) return;
 
-    if (!value || !container || !copy) return;
+  /** Store initial container style. */
+  const containerDisplay = container.style.display;
+  container.style.display = 'none';
 
-    this.container = container;
-    this.value = value;
-    this.containerDisplay = this.container.style.display;
-    this.container.style.display = 'none';
+  window.addEventListener(Events.GRAPH_ELEMENT_CHANGE, (event) => {
+    const element = (event as CustomEvent<ElementChangeEvent>).detail.element;
+    const data = element?.data(Data.LOCATION);
+    container.style.display = data ? containerDisplay : 'none';
+    value.innerText = data ?? '';
+  });
 
-    window.addEventListener(Events.GRAPH_ELEMENT_CHANGE, (event) => {
-      const element = (event as CustomEvent<ElementChangeEvent>).detail.element;
-      const data = element?.data(Data.LOCATION);
-      this.container.style.display = data ? this.containerDisplay : 'none';
-      this.value.innerText = data ?? '';
-    });
-
-    copy.addEventListener('click', () => {
-      navigator.clipboard.writeText(this.value.innerText);
-    });
-  }
-}
+  copy.addEventListener('click', () => {
+    navigator.clipboard.writeText(value.innerText);
+  });
+};

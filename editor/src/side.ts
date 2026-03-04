@@ -1,8 +1,8 @@
 import cytoscape from 'cytoscape';
-import { Data, ElementChangeEvent } from './data';
-import { LocationView } from './components/location';
-import { DocView } from './components/docview';
-import { Events } from './data';
+import { Data, ElementChangeEvent, Events } from './data';
+import { classesEdit } from './components/classes';
+import { docView } from './components/docview';
+import { locationView } from './components/location';
 
 /** Side panel state. */
 export class SidePanel {
@@ -16,10 +16,6 @@ export class SidePanel {
 
   /** ID of the currently displayed node or edge in the side panel. */
   current: string | null;
-
-  classFade: HTMLInputElement | null;
-  classDraft: HTMLInputElement | null;
-  classComment: HTMLInputElement | null;
 
   /** Current file name for saving. */
   filename = 'islands.json';
@@ -70,9 +66,6 @@ export class SidePanel {
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
     if (this.desc) this.desc.value = node.data(Data.NOTE) ?? '';
-    if (this.classFade) this.classFade.checked = node.hasClass('fade');
-    if (this.classDraft) this.classDraft.checked = node.hasClass('draft');
-    if (this.classComment) this.classComment.checked = node.hasClass('comment');
   }
 
   /** Hide display of node data. */
@@ -80,9 +73,6 @@ export class SidePanel {
     if (this.name) this.name.value = '';
     if (this.ref) this.ref.value = '';
     if (this.desc) this.desc.value = '';
-    if (this.classFade) this.classFade.checked = false;
-    if (this.classDraft) this.classDraft.checked = false;
-    if (this.classComment) this.classComment.checked = false;
   }
 
   constructor(cy: cytoscape.Core) {
@@ -94,8 +84,9 @@ export class SidePanel {
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
     this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
-    new LocationView();
-    new DocView();
+    locationView();
+    docView();
+    classesEdit(cy);
 
     this.name?.addEventListener('change', (event) => {
       const nodes = this.cy.elements(':selected');
@@ -171,35 +162,6 @@ export class SidePanel {
     });
     document.getElementById('side-fit-sel-button')?.addEventListener('click', () => {
       cy.fit(cy.elements(':selected'));
-    });
-
-    /** Toggle class depending on checkbox value. */
-    const toggleClass = (name: string, checked: boolean) => {
-      const elements = this.cy.elements(':selected');
-      if (checked) {
-        for (const elem of elements) {
-          elem.addClass(name);
-        }
-        return;
-      }
-      for (const elem of elements) {
-        elem.removeClass(name);
-      }
-    };
-
-    this.classFade = document.getElementById('side-edit-class-fade') as HTMLInputElement | null;
-    this.classFade?.addEventListener('change', ({ target }) => {
-      toggleClass('fade', (target as HTMLInputElement).checked);
-    });
-
-    this.classDraft = document.getElementById('side-edit-class-draft') as HTMLInputElement | null;
-    this.classDraft?.addEventListener('change', ({ target }) => {
-      toggleClass('draft', (target as HTMLInputElement).checked);
-    });
-
-    this.classComment = document.getElementById('side-edit-class-comment') as HTMLInputElement | null;
-    this.classComment?.addEventListener('change', ({ target }) => {
-      toggleClass('comment', (target as HTMLInputElement).checked);
     });
 
     document.getElementById('side-export-button')?.addEventListener('click', () => {
