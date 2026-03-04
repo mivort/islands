@@ -16,6 +16,7 @@ export const locationView = () => {
     const element = (event as CustomEvent<ElementChangeEvent>).detail.element;
     const data = element?.data(Data.LOCATION);
     container.style.display = data ? containerDisplay : 'none';
+    value.title = data ?? '';
     value.innerText = data ?? '';
   });
 
