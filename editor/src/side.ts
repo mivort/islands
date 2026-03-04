@@ -5,6 +5,7 @@ import { docView } from './components/docview';
 import { labelEdit } from './components/label';
 import { locationView } from './components/location';
 import { refEdit } from './components/ref';
+import { noteEdit } from './components/note';
 
 /** Side panel state. */
 export class SidePanel {
@@ -12,7 +13,6 @@ export class SidePanel {
   id: HTMLElement | null;
   shape: HTMLSelectElement | null;
   size: HTMLInputElement | null;
-  desc: HTMLTextAreaElement | null;
 
   /** ID of the currently displayed node or edge in the side panel. */
   current: string | null;
@@ -29,7 +29,6 @@ export class SidePanel {
     if (elements.length === 0) {
       selection = null;
       this.showId('');
-      this.hideElement();
     } else if (elements.length === 1) {
       selection = elements[0].id();
       this.showId(selection);
@@ -63,12 +62,6 @@ export class SidePanel {
   showElement(node: cytoscape.NodeSingular) {
     if (this.shape) this.shape.value = node.data(Data.SHAPE) ?? '';
     if (this.size) this.size.value = node.data(Data.SIZE) ?? 25;
-    if (this.desc) this.desc.value = node.data(Data.NOTE) ?? '';
-  }
-
-  /** Hide display of node data. */
-  hideElement() {
-    if (this.desc) this.desc.value = '';
   }
 
   constructor(cy: cytoscape.Core) {
@@ -76,10 +69,10 @@ export class SidePanel {
     this.id = document.getElementById('side-edit-id');
     this.shape = document.getElementById('side-edit-shape') as HTMLSelectElement;
     this.size = document.getElementById('side-edit-size') as HTMLInputElement;
-    this.desc = document.getElementById('side-edit-desc') as HTMLTextAreaElement;
 
     labelEdit(cy);
     refEdit(cy);
+    noteEdit(cy);
     locationView();
     docView();
     classesEdit(cy);
@@ -108,13 +101,6 @@ export class SidePanel {
       }
       for (const node of nodes) {
         node.removeData(Data.SIZE);
-      }
-    });
-    this.desc?.addEventListener('change', (event) => {
-      const nodes = this.cy.elements(':selected');
-      const value = (event.target as HTMLInputElement).value;
-      for (const node of nodes) {
-        node.data(Data.NOTE, value);
       }
     });
 
