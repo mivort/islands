@@ -26,15 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
         },
       },
       {
-        selector: `node[${Data.LABEL}]`,
+        selector: `node[${Data.LABEL}], edge[${Data.LABEL}]`,
         css: {
           'label': `data(${Data.LABEL})`,
-          'font-family': 'monospace',
           'font-size': 16,
+          'font-family': 'monospace',
           'text-wrap': 'wrap',
-          'text-margin-y': -2,
           'text-outline-width': 2,
           'text-outline-color': '#aaa',
+        }
+      },
+      {
+        selector: `node[${Data.LABEL}]`,
+        css: {
+          'text-margin-y': -2,
         },
       },
       {
