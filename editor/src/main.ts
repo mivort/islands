@@ -1,4 +1,4 @@
-import cytoscape from 'cytoscape';
+import cytoscape, { StylesheetJson } from 'cytoscape';
 import undoRedo from 'cytoscape-undo-redo';
 import contextMenus from 'cytoscape-context-menus';
 import { SidePanel } from './side';
@@ -10,19 +10,14 @@ import 'cytoscape-context-menus/cytoscape-context-menus.css';
 import { Data } from './data';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const cy = cytoscape({
-    container: document.getElementById('root'),
-    elements: [],
-    layout: { name: 'preset' },
-    minZoom: 0.1,
-    maxZoom: 100.0,
-    style: [
+  const style = (light: boolean): StylesheetJson => {
+    return [
       {
         selector: 'node',
         css: {
           'border-color': '#333',
           'border-width': '2',
-          'background-color': '#aaa',
+          'background-color': light ? '#fff' : '#aaa',
         },
       },
       {
@@ -33,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'font-family': 'monospace',
           'text-wrap': 'wrap',
           'text-outline-width': 2,
-          'text-outline-color': '#aaa',
+          'text-outline-color': light ? '#fff' : '#aaa',
         }
       },
       {
@@ -86,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'shape': 'round-rectangle',
           'corner-radius': '10',
           'border-color': '#333',
-          'background-color': '#999',
+          'background-color': light ? '#fff' : '#999',
           'background-opacity': 0.3,
         },
       },
@@ -100,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
       {
         selector: 'edge',
         css: {
-          'line-color': '#999',
+          'line-color': light ? '#fff' : '#999',
           'curve-style': 'straight',
           'target-arrow-shape': 'tee',
           'target-arrow-color': '#333',
@@ -130,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
       {
         selector: `node[${Data.LABEL}].comment`,
         css: {
-          'text-background-color': '#bbb',
+          'text-background-color': light ? '#fff' : '#bbb',
           'text-background-shape': 'roundrectangle',
           'text-background-padding': '8px',
           'text-background-opacity': 1,
@@ -187,7 +182,16 @@ document.addEventListener('DOMContentLoaded', () => {
           'line-color': '#0169d9',
         },
       },
-    ],
+    ];
+  };
+
+  const cy = cytoscape({
+    container: document.getElementById('root'),
+    elements: [],
+    layout: { name: 'preset' },
+    minZoom: 0.1,
+    maxZoom: 100.0,
+    style: style(false),
   });
 
   const undo = (cy as any).undoRedo({
